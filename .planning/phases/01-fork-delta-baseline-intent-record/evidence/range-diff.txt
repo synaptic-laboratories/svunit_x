@@ -1,0 +1,125 @@
+$ git range-diff 84b88033590a1469a238be84d8526b25a9f29d10..c2cb87111cf93cbf0f3f485730d314dbad3cb858 84b88033590a1469a238be84d8526b25a9f29d10..8e70653e2cbfe3ebe154a863a46bf482ded4bc19
+  1:  8e7d8d3 <   -:  ------- Improved Xilinx Vivado Simulator Support complete.
+  -:  ------- >   1:  dc7ed0a Create sentinel that pip requirements have been installed
+  -:  ------- >   2:  b6ba97f Only install requirements after `requirements.txt` changes
+  -:  ------- >   3:  ef5c1c7 Extract variable for sentinel file path
+  -:  ------- >   4:  d3c5ed1 Add possibility to use tool name for fake tool log files
+  -:  ------- >   5:  abc1b17 Pass elaboration args to `xelab`
+  -:  ------- >   6:  6f6f2ae Pass elaboration args to `xrun` and other single-step tools
+  -:  ------- >   7:  388f4cc Pass elaboration args to `vopt` (through `vsim`)
+  -:  ------- >   8:  97c5eca Pass elaboration args to `verilator`
+  -:  ------- >   9:  366fcb3 Document possibility to specify elaboration options in CHANGELOG
+  -:  ------- >  10:  7d430bd Fix typo
+  -:  ------- >  11:  a40abf5 Document possibility to specify elaboration options in user guide
+  -:  ------- >  12:  ed19d4b Bump jinja2 from 3.0.3 to 3.1.3 in /docs
+  -:  ------- >  13:  3ad55db Ignore backup files
+  -:  ------- >  14:  1a9cfeb Add `--list-tests` option to run script
+  -:  ------- >  15:  703c300 Inform SystemVerilog core when `--list-tests` option used
+  -:  ------- >  16:  e63cefa Stop running tests when `--list-tests` option used
+  -:  ------- >  17:  93c7f49 Stop running test cases when `--list-tests` option used
+  -:  ------- >  18:  e049cb9 Stop running test suites when `--list-tests` option used
+  -:  ------- >  19:  1f43b67 Confirm that nothing is run when `--list-tests` option used
+  -:  ------- >  20:  ed7096e Stop reporting results when `--list-tests` option used
+  -:  ------- >  21:  bb5e7ad Display name of test when `--list-tests` option used
+  -:  ------- >  22:  3edeb14 Add workaround for Verilator issue with stringification in concatenation operator
+  -:  ------- >  23:  5434a01 Display name of test case when `--list-tests` option used
+  -:  ------- >  24:  1699525 Extract fixture for tests
+  -:  ------- >  25:  02241eb Streamline tests by changing directory in fixture that creates testing setup
+  -:  ------- >  26:  e5e3b44 Document possibility to list available tests in CHANGELOG
+  -:  ------- >  27:  68ea422 Document possibility to list available tests in user guide
+  -:  ------- >  28:  2e3acbd Add workaround for QuestaSim printing a leading `# ` in the log output
+  -:  ------- >  29:  f4a8a52 Bump idna from 3.4 to 3.7 in /docs
+  -:  ------- >  30:  34d4c60 Use Verilator version 5.024 for testing
+  -:  ------- >  31:  4f2c9cf Add class for SVTESTs
+  -:  ------- >  32:  7ca04d6 Encapsulate code in an`SVTEST/SVTEST_END` block in an `svunit_test`
+  -:  ------- >  33:  b5022a2 Fix tests that check generated test suites
+  -:  ------- >  34:  eee94f6 Fix test relied on internal implementation detail to delay simulation end
+  -:  ------- >  35:  9e5f75c Fix error messages for timeouts to show source line of test
+  -:  ------- >  36:  814ee7d Extract execution of a single test to own task
+  -:  ------- >  37:  033f7e9 Fix race condition w.r.t. test registration and test execution
+  -:  ------- >  38:  0b7f86d Extract code for running test out of of macro
+  -:  ------- >  39:  002602a Remove direct references to unit test `setup()` and `teardown()` tasks
+  -:  ------- >  40:  b907361 Move all code related to running tests to `svunit_testcase`
+  -:  ------- >  41:  0a50ca1 Fix compile error in QuestaSim related to package variable usage before declaration
+  -:  ------- >  42:  0bde7a5 Add workaround for Verilator issue w.r.t. module variables used in class methods
+  -:  ------- >  43:  0d96720 Add possibility to quickly find test tasks in GUI
+  -:  ------- >  44:  31cb64b Add pull request template
+  -:  ------- >  45:  154fcdb Drop obsolete comment
+  -:  ------- >  46:  ab90092 Inline variable
+  -:  ------- >  47:  a3bcab8 Move statements to caller
+  -:  ------- >  48:  e973666 Drop unnecessary `begin/end`
+  -:  ------- >  49:  73fb47a Extract `if` statement outside of loop
+  -:  ------- >  50:  44d54cc Merge `if/else` blocks
+  -:  ------- >  51:  2c3e59a Replace nested conditional with guard clause
+  -:  ------- >  52:  6ce7552 Extract method that lists tests
+  -:  ------- >  53:  0a6cf1b Extract method that runs tests
+  -:  ------- >  54:  03fe84c Move `if` statement to caller
+  -:  ------- >  55:  3813636 Collect selected tests before running them
+  -:  ------- >  56:  7b141e5 Stop printing "RUNNING" message for testcases where no tests are selected
+  -:  ------- >  57:  8cd7ae5 Extract function that collects selected tests
+  -:  ------- >  58:  58291aa Stop printing "PASSED" message for testcases where no tests are selected
+  -:  ------- >  59:  1995d95 Create section for simulator checkboxes
+  -:  ------- >  60:  7e6038d Add section for checklist
+  -:  ------- >  61:  53e6426 Update CHANGELOG after fix of prints for test cases with no selected tests
+  -:  ------- >  62:  6c00bb1 Update version number
+  -:  ------- >  63:  96faf3d Clear version info from code
+  -:  ------- >  64:  837c1b9 Add entry for unreleased version to CHANGELOG
+  -:  ------- >  65:  9d53df8 Bump jinja2 from 3.1.3 to 3.1.4 in /docs
+  -:  ------- >  66:  38c9e7a --- updated-dependencies: - dependency-name: requests   dependency-type: direct:production ...
+  -:  ------- >  67:  e667a30 Move uvm_pkg import from global scope to inside module
+  -:  ------- >  68:  f4443ca Fix tests to expect import of UVM within test runner module
+  -:  ------- >  69:  e990297 Document fix for compile performance in Xcelium when running with UVM
+  -:  ------- >  70:  16d5af6 Document addition of experimental features in version 3.37.0
+  -:  ------- >  71:  a6d7d4d Add section about experimental features to user guide
+  -:  ------- >  72:  10c00d8 Avoid copying code in user guide
+  -:  ------- >  73:  d829e89 Add temporary workaround to get experimental code to at least compile
+  -:  ------- >  74:  808f057 Add adapter between new `svunit::test` and old `svunit_pkg::svunit_test` classes
+  -:  ------- >  75:  5a98f68 Fix experimental code to work after internal refactoring of test execution classes
+  -:  ------- >  76:  8e4c4b7 Document fix of experimental code
+  -:  ------- >  77:  57315fe Bump certifi from 2023.7.22 to 2024.7.4 in /docs
+  -:  ------- >  78:  a33e88b Bump urllib3 from 1.26.18 to 1.26.19 in /docs
+  -:  ------- >  79:  c20688a Fix wrong path parameter
+  -:  ------- >  80:  10d0bc6 Document release of version 3.37.1
+  -:  ------- >  81:  e1617d5 Fix experimental code to avoid clash with included files
+  -:  ------- >  82:  bfac374 Document fix for avoiding clash with included file from experimental code
+  -:  ------- >  83:  c14c5cb Initial plan
+  -:  ------- >  84:  ad20629 Update version of Ubuntu on runner
+  -:  ------- >  85:  6b60b8e Update version of Python
+  -:  ------- >  86:  154b939 Add explicit GITHUB_TOKEN permissions to CI workflow
+  -:  ------- >  87:  574defa Initial plan
+  2:  c2cb871 !  88:  93d3e7e Simuator now listed on --help
+    @@
+      ## Metadata ##
+    -Author: BenjaminGittins <gittins.b@gmail.com>
+    +Author: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+     
+      ## Commit message ##
+    -    Simuator now listed on --help
+    +    Add xsim to list of supported simulators in usage message
+    +
+    +    Co-authored-by: tudortimi <8170909+tudortimi@users.noreply.github.com>
+     
+      ## bin/runSVUnit ##
+     @@ bin/runSVUnit: my $help;
+      sub usage () {
+        print "Usage:  runSVUnit [-s|--sim <simulator> -l|--log <log> -d|--define <macro> -f|--filelist <file> -U|-uvm -m|-mixedsim <vhdlfile>\n";
+    -   print "                  -r|--r_arg <option> -c|--c_arg <option> -o|--out <dir> -t|--test <test> --filter <filter>]\n";
+    +   print "                  -r|--r_arg <option> -c|--c_arg <option> -e|--e_arg <option> -o|--out <dir> -t|--test <test> --filter <filter>]\n";
+     -  print "  -s|--sim <simulator>     : simulator is either of questa, modelsim, riviera, ius, xcelium, vcs, dsim, verilator\n";
+     +  print "  -s|--sim <simulator>     : simulator is either of questa, modelsim, riviera, ius, xcelium, vcs, dsim, verilator, xsim\n";
+        print "  -l|--log <log>           : simulation log file (default: run.log)\n";
+  -:  ------- >  89:  ee8dc24 Fix invalid JUnit XML when failure messages contain XML special characters
+  -:  ------- >  90:  6efa54c Ignore temporary files produced by DVT
+  -:  ------- >  91:  754ea19 Make it possible to run functional tests on multiple cores using pytest-xdist
+  -:  ------- >  92:  37c6172 Document how to run functional tests on multiple cores
+  -:  ------- >  93:  13e921e Run functional tests on multiple cores in CI pipeline
+  -:  ------- >  94:  12d09a0 Initial plan
+  -:  ------- >  95:  a6df32a Fix misleading error message from `runSVUnit` when unknown simulator specified via `--sim` option
+  -:  ------- >  96:  4fa9986 Add CHANGELOG entry for unknown simulator error message fix
+  -:  ------- >  97:  c4e014f Initial plan
+  -:  ------- >  98:  6c7e3fe Fix `create_unit_test.pl -help`` to exit cleanly after printing help
+  -:  ------- >  99:  31d9f5d Update CHANGELOG for `create_unit_test.pl -help`` fix
+  -:  ------- > 100:  d201fc9 Remove redundant pip install step from CI workflow
+  -:  ------- > 101:  d0c1a25 Document fix for invalid JUnit XML
+  -:  ------- > 102:  a558b6b Add agent skill for releasing a new SVUnit version
+  -:  ------- > 103:  b8d9c2d Update version number to 3.38.1

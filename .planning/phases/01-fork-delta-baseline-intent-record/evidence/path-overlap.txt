@@ -1,0 +1,9 @@
+$ comm -12 <(git diff --name-only 84b88033590a1469a238be84d8526b25a9f29d10..c2cb87111cf93cbf0f3f485730d314dbad3cb858 | sort) <(git diff --name-only 84b88033590a1469a238be84d8526b25a9f29d10..8e70653e2cbfe3ebe154a863a46bf482ded4bc19 | sort)
+bin/runSVUnit
+src/experimental/sv/svunit.sv
+src/experimental/sv/testcase.svh
+svunit_base/junit-xml/XmlElement.svh
+svunit_base/svunit_pkg.sv
+svunit_base/svunit_testcase.sv
+svunit_base/svunit_testrunner.sv
+svunit_base/svunit_testsuite.sv

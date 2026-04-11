@@ -1,0 +1,42 @@
+$ git rev-list --reverse 84b88033590a1469a238be84d8526b25a9f29d10..c2cb87111cf93cbf0f3f485730d314dbad3cb858
+8e7d8d35e68a2deb0923871de998b13782f5f5ec
+c2cb87111cf93cbf0f3f485730d314dbad3cb858
+
+$ git show --stat --name-only 8e7d8d35e68a2deb0923871de998b13782f5f5ec
+commit 8e7d8d35e68a2deb0923871de998b13782f5f5ec
+Author: BenjaminGittins <gittins.b@gmail.com>
+Date:   Sat Nov 25 12:32:54 2023 +0400
+
+    Improved Xilinx Vivado Simulator Support complete.
+
+bin/cleanSVUnit
+bin/runSVUnit
+src/experimental/sv/svunit.sv
+src/experimental/sv/test_registry.svh
+src/experimental/sv/testcase.svh
+src/experimental/sv/testsuite.svh
+src/test/sv/string_utils_unit_test.sv
+src/testExperimental/sv/test_registry_unit_test.sv
+svunit_base/junit-xml/TestCase.svh
+svunit_base/junit-xml/TestSuite.svh
+svunit_base/junit-xml/XmlElement.svh
+svunit_base/junit-xml/junit_xml.sv
+svunit_base/svunit_base.sv
+svunit_base/svunit_filter.svh
+svunit_base/svunit_filter_for_single_pattern.svh
+svunit_base/svunit_internal_defines.svh
+svunit_base/svunit_pkg.sv
+svunit_base/svunit_string_utils.svh
+svunit_base/svunit_testcase.sv
+svunit_base/svunit_testrunner.sv
+svunit_base/svunit_testsuite.sv
+test/utils.py
+
+$ git show --stat --name-only c2cb87111cf93cbf0f3f485730d314dbad3cb858
+commit c2cb87111cf93cbf0f3f485730d314dbad3cb858
+Author: BenjaminGittins <gittins.b@gmail.com>
+Date:   Sat Nov 25 13:14:30 2023 +0400
+
+    Simuator now listed on --help
+
+bin/runSVUnit
