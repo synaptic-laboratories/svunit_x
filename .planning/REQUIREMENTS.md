@@ -9,7 +9,7 @@ Requirements for the current upstream catch-up stage. Each maps to one roadmap p
 
 ### Baseline Identification
 
-- [ ] **BASE-01**: Maintainer can confirm the exact upstream tag or commit to sync against for this stage and record that reference in the repo
+- [x] **BASE-01**: Maintainer can confirm the exact upstream tag or commit to sync against for this stage and record that reference in the repo
 - [ ] **BASE-02**: Maintainer can generate a file-backed comparison of this fork against the confirmed upstream target
 - [ ] **BASE-03**: Maintainer can classify each fork-only change as `keep`, `superseded`, `rewrite`, or `human-review`
 
@@ -61,7 +61,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BASE-01 | Phase 1 | Pending |
+| BASE-01 | Phase 1 | Complete |
 | BASE-02 | Phase 1 | Pending |
 | BASE-03 | Phase 1 | Pending |
 | XILX-01 | Phase 1 | Pending |

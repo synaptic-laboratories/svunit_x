@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-04-11T12:05:54.713Z"
-last_activity: 2026-04-11 - Roadmap created, phases defined, and requirements mapped
+status: executing
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-04-11T13:38:53.547Z"
+last_activity: 2026-04-11
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Bring upstream SVUnit changes into this fork without regressing the fork's Xilinx/Vivado-specific behavior, using Quartus-based verification as the sign-off gate for this stage.
-**Current focus:** Phase 1 - Fork Delta Baseline & Intent Record
+**Current focus:** Phase 01 — fork-delta-baseline-intent-record
 
 ## Current Position
 
-Phase: 1 of 4 (Fork Delta Baseline & Intent Record)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-04-11 - Roadmap created, phases defined, and requirements mapped
+Phase: 01 (fork-delta-baseline-intent-record) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-11
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -51,6 +51,8 @@ Progress: [░░░░░░░░░░] 0%
 - Last 5 plans: none
 - Trend: Stable
 
+| Phase 01-fork-delta-baseline-intent-record P01 | 4m41s | 3 tasks | 6 files |
+
 ## Accumulated Context
 
 ### Decisions
@@ -61,6 +63,8 @@ Recent decisions affecting current work:
 - Phase 1: Document the fork-specific Xilinx/Vivado delta and classify divergences before any upstream merge work.
 - Phase 2: Use git history plus recorded change intent for non-trivial upstream conflict resolution.
 - Phase 3: Use Quartus-based regression as the sign-off gate; the Xilinx flake remains future work.
+- [Phase 01-fork-delta-baseline-intent-record]: Use https://github.com/svunit/svunit.git as the authoritative upstream and pin the exact tag object and peeled commit in repo artifacts.
+- [Phase 01-fork-delta-baseline-intent-record]: Treat the remembered v3.37.0 baseline mismatch and candidate-marker first-parent mismatch as human-review while allowing later phases to rely on the pinned target and merge-base.
 
 ### Pending Todos
 
@@ -73,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-11T12:05:54.711Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-fork-delta-baseline-intent-record/01-CONTEXT.md
+Last session: 2026-04-11T13:38:53.545Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None
