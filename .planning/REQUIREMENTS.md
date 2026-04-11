@@ -10,13 +10,13 @@ Requirements for the current upstream catch-up stage. Each maps to one roadmap p
 ### Baseline Identification
 
 - [x] **BASE-01**: Maintainer can confirm the exact upstream tag or commit to sync against for this stage and record that reference in the repo
-- [ ] **BASE-02**: Maintainer can generate a file-backed comparison of this fork against the confirmed upstream target
-- [ ] **BASE-03**: Maintainer can classify each fork-only change as `keep`, `superseded`, `rewrite`, or `human-review`
+- [x] **BASE-02**: Maintainer can generate a file-backed comparison of this fork against the confirmed upstream target
+- [x] **BASE-03**: Maintainer can classify each fork-only change as `keep`, `superseded`, `rewrite`, or `human-review`
 
 ### Xilinx Preservation
 
-- [ ] **XILX-01**: Maintainer can trace local Xilinx/Vivado-related behavior to the commits and files that introduced or adjusted it
-- [ ] **XILX-02**: Maintainer can document the intent of each material Xilinx/Vivado-related fork change in a reviewable repo artifact
+- [x] **XILX-01**: Maintainer can trace local Xilinx/Vivado-related behavior to the commits and files that introduced or adjusted it
+- [x] **XILX-02**: Maintainer can document the intent of each material Xilinx/Vivado-related fork change in a reviewable repo artifact
 - [ ] **XILX-03**: Upstream integration preserves required Xilinx/Vivado-specific behavior or records an explicit justified replacement for it
 
 ### Upstream Integration
@@ -62,10 +62,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | BASE-01 | Phase 1 | Complete |
-| BASE-02 | Phase 1 | Pending |
-| BASE-03 | Phase 1 | Pending |
-| XILX-01 | Phase 1 | Pending |
-| XILX-02 | Phase 1 | Pending |
+| BASE-02 | Phase 1 | Complete |
+| BASE-03 | Phase 1 | Complete |
+| XILX-01 | Phase 1 | Complete |
+| XILX-02 | Phase 1 | Complete |
 | XILX-03 | Phase 2 | Pending |
 | SYNC-01 | Phase 2 | Pending |
 | SYNC-02 | Phase 2 | Pending |

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-04-11T13:38:53.547Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-04-11T13:56:50.133Z"
 last_activity: 2026-04-11
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 ## Current Position
 
 Phase: 01 (fork-delta-baseline-intent-record) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-11
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: Stable
 
 | Phase 01-fork-delta-baseline-intent-record P01 | 4m41s | 3 tasks | 6 files |
+| Phase 01-fork-delta-baseline-intent-record P02 | 8m33s | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,8 @@ Recent decisions affecting current work:
 - Phase 3: Use Quartus-based regression as the sign-off gate; the Xilinx flake remains future work.
 - [Phase 01-fork-delta-baseline-intent-record]: Use https://github.com/svunit/svunit.git as the authoritative upstream and pin the exact tag object and peeled commit in repo artifacts.
 - [Phase 01-fork-delta-baseline-intent-record]: Treat the remembered v3.37.0 baseline mismatch and candidate-marker first-parent mismatch as human-review while allowing later phases to rely on the pinned target and merge-base.
+- [Phase 01-fork-delta-baseline-intent-record]: Split 8e7d8d35e68a2deb0923871de998b13782f5f5ec only along clean subsystem threads, and keep c2cb87111cf93cbf0f3f485730d314dbad3cb858 separate because range-diff identifies a direct upstream counterpart.
+- [Phase 01-fork-delta-baseline-intent-record]: Treat stable-runtime and experimental parser-compatibility edits as rewrite candidates, keep helper-library parser fixes as local until proven unnecessary, and leave the suspicious test/utils.py simulator edit as human-review.
 
 ### Pending Todos
 
@@ -77,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-11T13:38:53.545Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-04-11T13:56:50.131Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
