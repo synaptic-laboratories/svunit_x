@@ -1,0 +1,17 @@
+{
+  "upstream_url": "https://github.com/svunit/svunit.git",
+  "target_tag": "v3.38.1",
+  "target_tag_object": "e8adb554f99b579db6199b3aab547b4e68a16501",
+  "target_commit": "8e70653e2cbfe3ebe154a863a46bf482ded4bc19",
+  "remembered_baseline_tag": "v3.37.0",
+  "remembered_baseline_commit": "355c1411baf4d0233cb7862e53873ae90ec807e5",
+  "fork_head": "c2cb87111cf93cbf0f3f485730d314dbad3cb858",
+  "derived_merge_base": "84b88033590a1469a238be84d8526b25a9f29d10",
+  "candidate_marker": "dc7ed0a5a8b88533b52d884e2c473beb9d4ce273",
+  "candidate_marker_full_ancestry_first_descendant": "dc7ed0a5a8b88533b52d884e2c473beb9d4ce273",
+  "candidate_marker_first_parent_first_descendant": "6e179cadaa036554452f8e82e9ca9e94bf307c40",
+  "remembered_baseline_matches_merge_base": false,
+  "candidate_marker_matches_full_ancestry_first_descendant": true,
+  "candidate_marker_matches_first_parent_first_descendant": false,
+  "baseline_disposition": "human-review"
+}

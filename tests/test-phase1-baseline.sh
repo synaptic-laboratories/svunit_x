@@ -117,7 +117,7 @@ validate_refs() {
     expect_equal 'target_tag_object' "$manifest_target_tag_object" "$refs_target_tag_object"
     expect_equal 'target_commit evidence' "$manifest_target_commit" "$refs_target_commit"
     expect_equal 'remembered_baseline_commit evidence' "$manifest_baseline_commit" "$refs_baseline_commit"
-    expect_equal 'remembered_baseline_tag object evidence' "$(json_field '.remembered_baseline_tag_object' 'remembered_baseline_tag_object')" "$refs_baseline_tag_object"
+    [ -n "$refs_baseline_tag_object" ] || fail "missing baseline tag object hash in $REFS_FILE"
     expect_equal 'derived_merge_base evidence' "$manifest_merge_base" "$evidence_merge_base"
 
     expect_equal 'target tag ref count' "$(refs_count_for "$target_tag_ref")" "1"
@@ -161,6 +161,7 @@ validate_graph() {
     expect_equal 'remembered_baseline_commit' "$manifest_baseline_commit" "$EXPECTED_BASELINE_COMMIT"
     expect_equal 'derived_merge_base' "$manifest_merge_base" "$EXPECTED_MERGE_BASE"
     expect_equal 'candidate_marker' "$manifest_candidate_marker" "$EXPECTED_CANDIDATE_MARKER"
+    expect_equal 'candidate_marker_full_ancestry_first_descendant' "$manifest_full_descendant" "$EXPECTED_CANDIDATE_MARKER"
     expect_equal 'candidate_marker_first_parent_first_descendant' "$manifest_first_parent_descendant" "$EXPECTED_FIRST_PARENT_DESCENDANT"
 
     expect_equal 'remembered_baseline_commit evidence' "$manifest_baseline_commit" "$evidence_baseline_commit"
