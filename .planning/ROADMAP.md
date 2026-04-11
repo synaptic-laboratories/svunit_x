@@ -29,6 +29,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Maintainer can trace each material Xilinx/Vivado behavior change to the commits and files that introduced or modified it.
   4. Maintainer can review a written intent record explaining why each material Xilinx/Vivado divergence exists and why it should be preserved, rewritten, or reconsidered.
 **Plans**: 3 plans
+Plans:
+- [ ] `01-01-PLAN.md` — Pin the authoritative upstream baseline, record ancestry discrepancies, and install replayable baseline verification checks
+- [ ] `01-02-PLAN.md` — Build the fork-only evidence set and master logical-change matrix from the verified merge-base
+- [ ] `01-03-PLAN.md` — Package the executive summary, Xilinx intent record, and human-review handoff for Phase 2
 
 ### Phase 2: History-Aware Upstream Integration
 **Goal**: Maintainer can bring this fork up to the confirmed upstream target while preserving required local Xilinx/Vivado behavior and isolating ambiguous outcomes for human review.
