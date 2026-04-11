@@ -262,17 +262,11 @@ Source: local git history and official `range-diff` semantics. [VERIFIED: local 
 |---|-------|---------|---------------|
 | None | All claims in this research were verified locally, against the official upstream repo, or against official Git docs. [VERIFIED: local git evidence; CITED: https://git-scm.com/docs/git-merge-base, https://git-scm.com/docs/git-ls-remote, https://git-scm.com/docs/git-range-diff] | N/A | N/A |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should Phase 1 record `baseline` as the remembered release tag, the true merge-base, or both?**
-   - What we know: `v3.37.0` peels to `355c141...`, while the true merge-base to the target is `84b8803...`. [VERIFIED: git ls-remote upstream; git merge-base]
-   - What's unclear: whether maintainers want `baseline` to mean "last known release anchor" or "actual divergence commit". [VERIFIED: Phase 1 context + local git evidence]
-   - Recommendation: Record both fields and block Phase 2 until a human confirms the interpretation. [VERIFIED: D-05, D-07]
+1. **Baseline semantics resolved:** Phase 1 must record both the remembered release anchor and the true operational fork point, but they are not interchangeable. `remembered_baseline_tag` and `remembered_baseline_commit` preserve the user-directed `v3.37.0` reference from D-05, while `derived_merge_base` is the only commit that later diff, `range-diff`, and fork-only inventory work should use as the comparison base. This resolves the ambiguity by making the artifact carry both concepts explicitly instead of overloading one `baseline` field. [VERIFIED: git ls-remote upstream; git merge-base; D-04; D-05; D-07]
 
-2. **Does "candidate marker" mean earliest descendant commit or first mainline commit after the fork?**
-   - What we know: full ancestry starts at `dc7ed0a...`; first-parent ancestry starts at `6e179ca...`. [VERIFIED: local git rev-list]
-   - What's unclear: which definition the maintainer intended when providing `dc7ed0a...`. [VERIFIED: Phase 1 context + local git evidence]
-   - Recommendation: Put both in the baseline manifest and classify the mismatch `human-review` unless the maintainer chooses one definition explicitly. [VERIFIED: D-06, D-07]
+2. **Candidate-marker semantics resolved:** Phase 1 should not use a single overloaded "first upstream commit after the fork" field. Record the user-supplied `dc7ed0a5a8b88533b52d884e2c473beb9d4ce273` as the verified `candidate_marker`, record `candidate_marker_full_ancestry_first_descendant=dc7ed0a5a8b88533b52d884e2c473beb9d4ce273`, and record `candidate_marker_first_parent_first_descendant=6e179cadaa036554452f8e82e9ca9e94bf307c40` as the alternate mainline interpretation. The disagreement is no longer an open semantic question once the fields are explicit; it remains a deliberate `human-review` condition per D-07 whenever later work depends on which interpretation to privilege. [VERIFIED: local git rev-list; D-06; D-07]
 
 ## Environment Availability
 
@@ -295,29 +289,29 @@ Source: local git history and official `range-diff` semantics. [VERIFIED: local 
 ### Test Framework
 | Property | Value |
 |----------|-------|
-| Framework | None; replayable shell and git command checks are sufficient for this documentation-heavy phase. [VERIFIED: Phase 1 scope + local env] |
-| Config file | none — add small shell checks under `tests/` if the planner wants automation. [VERIFIED: local repo state] |
-| Quick run command | `git ls-remote --tags https://github.com/svunit/svunit.git 'v3.38.1*' 'v3.37.0*' && git merge-base c2cb87111cf93cbf0f3f485730d314dbad3cb858 8e70653e2cbfe3ebe154a863a46bf482ded4bc19 && git rev-list --reverse 84b88033590a1469a238be84d8526b25a9f29d10..c2cb87111cf93cbf0f3f485730d314dbad3cb858` [VERIFIED: local git evidence] |
-| Full suite command | Quick run command plus `git range-diff 84b88033590a1469a238be84d8526b25a9f29d10..c2cb87111cf93cbf0f3f485730d314dbad3cb858 84b88033590a1469a238be84d8526b25a9f29d10..8e70653e2cbfe3ebe154a863a46bf482ded4bc19` and artifact content checks with `rg`. [VERIFIED: local git evidence] |
+| Framework | Replayable shell and git command checks created in-plan are sufficient for this documentation-heavy phase. [VERIFIED: Phase 1 scope + local env; 01-01-PLAN.md; 01-02-PLAN.md] |
+| Config file | none — `01-01-01` creates `tests/test-phase1-baseline.sh` and `01-02-01` creates `tests/test-phase1-matrix.sh`. [VERIFIED: 01-01-PLAN.md; 01-02-PLAN.md] |
+| Quick run command | `bash tests/test-phase1-baseline.sh refs && bash tests/test-phase1-baseline.sh graph` once `01-01-01` has landed. [VERIFIED: 01-01-PLAN.md] |
+| Full suite command | `bash tests/test-phase1-baseline.sh refs && bash tests/test-phase1-baseline.sh graph && bash tests/test-phase1-matrix.sh files && bash tests/test-phase1-matrix.sh classifications && bash tests/test-phase1-matrix.sh xilinx-trace && bash tests/test-phase1-matrix.sh intent` once `01-02-01` has landed. [VERIFIED: 01-01-PLAN.md; 01-02-PLAN.md] |
 
 ### Phase Requirements -> Test Map
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| BASE-01 | Official target ref, remembered baseline, and resolved hashes are recorded | shell | `tests/test-phase1-baseline.sh refs` | ❌ Wave 0 |
-| BASE-02 | Fork-vs-upstream comparison is file-backed | shell | `tests/test-phase1-matrix.sh files` | ❌ Wave 0 |
-| BASE-03 | Each logical unit carries a classification | shell | `tests/test-phase1-matrix.sh classifications` | ❌ Wave 0 |
-| XILX-01 | Material Xilinx/Vivado changes map to commits and files | shell | `tests/test-phase1-matrix.sh xilinx-trace` | ❌ Wave 0 |
-| XILX-02 | Each material Xilinx/Vivado change has intent notes | shell | `tests/test-phase1-matrix.sh intent` | ❌ Wave 0 |
+| BASE-01 | Official target ref, remembered baseline, and resolved hashes are recorded | shell | `tests/test-phase1-baseline.sh refs` | created in `01-01-01` |
+| BASE-02 | Fork-vs-upstream comparison is file-backed | shell | `tests/test-phase1-matrix.sh files` | created in `01-02-01` |
+| BASE-03 | Each logical unit carries a classification | shell | `tests/test-phase1-matrix.sh classifications` | created in `01-02-01` |
+| XILX-01 | Material Xilinx/Vivado changes map to commits and files | shell | `tests/test-phase1-matrix.sh xilinx-trace` | created in `01-02-01` |
+| XILX-02 | Each material Xilinx/Vivado change keeps row-level intent and merge-handling notes in the matrix | shell | `tests/test-phase1-matrix.sh intent` | created in `01-02-01` |
 
 ### Sampling Rate
 - **Per task commit:** rerun the quick ref-resolution and merge-base commands. [VERIFIED: local git evidence]
 - **Per wave merge:** rerun `range-diff`, path-overlap, and artifact-content checks. [VERIFIED: local git evidence]
 - **Phase gate:** Re-resolve upstream refs and confirm the artifact still matches before `/gsd-verify-work`. [VERIFIED: D-02, D-03, D-04]
 
-### Wave 0 Gaps
-- [ ] `tests/test-phase1-baseline.sh` — verify pinned upstream URL, target tag, peeled commit, remembered tag, merge-base, and marker semantics. [VERIFIED: Phase 1 requirements]
-- [ ] `tests/test-phase1-matrix.sh` — verify every logical unit row includes files, commit(s), purpose, Xilinx relevance, classification, and merge notes. [VERIFIED: D-16]
-- [ ] Artifact conventions — planner must choose the final filenames for the JSON manifest, matrix, and evidence directory before automation is added. [VERIFIED: D-14, D-17, discretion scope]
+### In-Plan Test Scaffolding
+- [x] `tests/test-phase1-baseline.sh` is created by `01-01-01` before the `refs` and `graph` checks consume it. [VERIFIED: 01-01-PLAN.md]
+- [x] `tests/test-phase1-matrix.sh` is created by `01-02-01` before the `files`, `classifications`, `xilinx-trace`, and `intent` checks consume it. [VERIFIED: 01-02-PLAN.md]
+- [x] Artifact conventions are already fixed by the current plans: `01-upstream-baseline.json`, `01-fork-delta-matrix.md`, `01-executive-summary.md`, `01-human-review.md`, and `evidence/`. [VERIFIED: 01-01-PLAN.md; 01-02-PLAN.md; 01-03-PLAN.md]
 
 ## Security Domain
 
