@@ -80,7 +80,7 @@ check_table() {
         }
 
         function has_allowed_path(value) {
-            return value ~ /(bin\/|svunit_base\/|src\/experimental\/sv\/|test\/|README\.md|CHANGELOG\.md|docs\/)/
+            return value ~ /(bin\/|svunit_base\/|src\/experimental\/sv\/|src\/testExperimental\/sv\/|test\/|README\.md|CHANGELOG\.md|docs\/)/
         }
 
         function is_xilinx_related(value) {
