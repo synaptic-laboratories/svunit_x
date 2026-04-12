@@ -21,7 +21,9 @@
 */
 virtual class svunit_test extends svunit_base;
 
-  function new(string name);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // function new(string name);
+  function new(input string name);
     super.new(name);
   endfunction
 

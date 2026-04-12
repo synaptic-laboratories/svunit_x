@@ -7,12 +7,16 @@ class testcase extends svunit_testcase;
   local test::builder test_builders[$];
 
 
-  function new(string name);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // function new(string name);
+  function new(input string name);
     super.new(name);
   endfunction
 
 
-  function void register(test::builder test_builder);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // function void register(test::builder test_builder);
+  function void register(input test::builder test_builder);
     test_builders.push_back(test_builder);
     add_test(test_builder.create().get_adapter());
   endfunction

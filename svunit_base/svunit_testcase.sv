@@ -137,7 +137,9 @@ class svunit_testcase extends svunit_base;
   endfunction
 
 
-  local task run_test(svunit_pkg::svunit_test test);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // local task run_test(svunit_pkg::svunit_test test);
+  local task run_test(input svunit_pkg::svunit_test test);
     string _testName = test.get_name();
     integer local_error_count = get_error_count();
     string fileName;

@@ -6,7 +6,9 @@ class test_registry;
   local testsuite testsuites[string];
 
 
-  function void register(test::builder test_builder, string full_name);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // function void register(test::builder test_builder, string full_name);
+  function void register(input test::builder test_builder, input string full_name);
     testsuite ts;
     
     // This needs to be declared as a dynamic array[$] (not a static array[] with a fixed length)
@@ -26,7 +28,9 @@ class test_registry;
   endfunction
 
 
-  local function testsuite get_testsuite(string name);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // local function testsuite get_testsuite(string name);
+  local function testsuite get_testsuite(input string name);
     if (!testsuites.exists(name))
       testsuites[name] = new({ name, "_ts" });
     return testsuites[name];

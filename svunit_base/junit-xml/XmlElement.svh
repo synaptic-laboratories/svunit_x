@@ -70,7 +70,9 @@ class XmlElement;
   endfunction
 
 
-  local function string xml_encode(string s);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // local function string xml_encode(string s);
+  local function string xml_encode(input string s);
     string result = "";
     for (int i = 0; i < s.len(); i++) begin
       string c;

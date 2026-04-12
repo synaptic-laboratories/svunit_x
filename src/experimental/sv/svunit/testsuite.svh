@@ -3,12 +3,16 @@ class testsuite extends svunit_testsuite;
   typedef testcase array_of_testcase[$];
 
 
-  function new(string name);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // function new(string name);
+  function new(input string name);
     super.new(name);
   endfunction
 
 
-  function void register(test::builder test_builder, string full_name);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // function void register(test::builder test_builder, string full_name);
+  function void register(input test::builder test_builder, input string full_name);
     testcase tc;
 
     // This needs to be declared as a dynamic array[$] (not a static array[] with a fixed length)
@@ -26,7 +30,9 @@ class testsuite extends svunit_testsuite;
   endfunction
 
 
-  local function testcase get_testcase(string name);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // local function testcase get_testcase(string name);
+  local function testcase get_testcase(input string name);
     foreach (list_of_testcases[i])
       if (list_of_testcases[i].get_name() == name) begin
         testcase tc;

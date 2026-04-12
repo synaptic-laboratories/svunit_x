@@ -10,7 +10,9 @@ virtual class test;
   local const adapter a = new(this);
 
 
-  protected static function bit register_test_builder(builder b, string typename);
+  // <<SLL-FIX>> original upstream signature kept for review
+  // protected static function bit register_test_builder(builder b, string typename);
+  protected static function bit register_test_builder(input builder b, input string typename);
     full_name_extraction fn_extraction = new();
     string full_name = fn_extraction.get_full_name(typename);
     global_test_registry::get().register(b, full_name);
@@ -70,7 +72,9 @@ virtual class test;
 
     local const test parent;
 
-    function new(test parent);
+    // <<SLL-FIX>> original upstream signature kept for review
+    // function new(test parent);
+    function new(input test parent);
       super.new(parent.name());
       this.parent = parent;
     endfunction
