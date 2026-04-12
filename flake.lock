@@ -21,14 +21,17 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1774093954,
-        "narHash": "sha256-1eWWwrOdjKOSfYTEDeNUX8AZG81Pk2+UOW1W+cwt1bM=",
-        "path": "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79",
-        "type": "path"
+        "lastModified": 1775993147,
+        "narHash": "sha256-0KnkrHGKD8NQCmllKKiZ15eoMtkmmraza6HDcSvLGNw=",
+        "ref": "refs/heads/master",
+        "rev": "38356a407baecbc6cf237c8c78c006a6c42fa0ef",
+        "revCount": 1,
+        "type": "git",
+        "url": "ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79"
       },
       "original": {
-        "path": "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79",
-        "type": "path"
+        "type": "git",
+        "url": "ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79"
       }
     },
     "root": {

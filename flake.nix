@@ -3,7 +3,7 @@
 
   inputs = {
     quartus-podman = {
-      url = "path:/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79";
+      url = "git+ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79";
     };
     nixpkgs.follows = "quartus-podman/nixpkgs";
   };
@@ -98,7 +98,7 @@
           fi
 
           CONTAINER_ENV=(
-            -e LM_LICENSE_FILE=/opt/quartus_license.dat
+            -e LM_LICENSE_FILE=/opt/quartus_license.dat:/opt/questa_license.dat
             -e QUARTUS_PATH=${quartusInstallRoot}
             -e QUARTUS_ROOTDIR=${quartusInstallRoot}/quartus
             -e SOPC_KIT_NIOS2=${quartusInstallRoot}/nios2eds
