@@ -84,7 +84,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- Audit imported changes for Xilinx thematics
+  See: `.planning/todos/pending/2026-04-12-audit-imported-changes-for-xilinx-thematics.md`
 
 ### Blockers/Concerns
 
