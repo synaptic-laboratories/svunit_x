@@ -12,7 +12,7 @@ This roadmap treats the repo as a brownfield maintenance fork, not a greenfield 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Fork Delta Baseline & Intent Record** - Confirm the upstream target and classify the fork-specific Xilinx/Vivado delta before merge work starts.
+- [x] **Phase 1: Fork Delta Baseline & Intent Record** - Confirm the upstream target and classify the fork-specific Xilinx/Vivado delta before merge work starts. (completed 2026-04-12)
 - [ ] **Phase 2: History-Aware Upstream Integration** - Catch the fork up to upstream while preserving required local behavior and isolating risky merge outcomes for human review.
 - [ ] **Phase 3: Quartus Verification & Sign-Off** - Prove the synchronized fork passes this stage's required regression flow in the certified Quartus environment.
 - [ ] **Phase 4: Maintainer Documentation & Handoff** - Leave maintainers with the sign-off boundary, sync method, and deferred-work guidance in repo documentation.
@@ -74,7 +74,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fork Delta Baseline & Intent Record | 2/3 | In Progress|  |
+| 1. Fork Delta Baseline & Intent Record | 3/3 | Complete    | 2026-04-12 |
 | 2. History-Aware Upstream Integration | 0/3 | Not started | - |
 | 3. Quartus Verification & Sign-Off | 0/2 | Not started | - |
 | 4. Maintainer Documentation & Handoff | 0/2 | Not started | - |
