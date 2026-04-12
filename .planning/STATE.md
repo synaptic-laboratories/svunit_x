@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.38.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-04-12T08:28:21.823Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-04-12T08:41:31.577Z"
 last_activity: 2026-04-12
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 6
-  completed_plans: 5
-  percent: 83
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 02 (history-aware-upstream-integration) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-12
 
@@ -55,6 +55,7 @@ Progress: [██░░░░░░░░] 25%
 | Phase 01-fork-delta-baseline-intent-record P02 | 8m33s | 3 tasks | 6 files |
 | Phase 01-fork-delta-baseline-intent-record P03 | checkpointed | 3 tasks | 3 files |
 | Phase 02 P01 | 5m 15s | 3 tasks | 5 files |
+| Phase 02 P02 | 9m 37s | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Recent decisions affecting current work:
 - [Phase 01-fork-delta-baseline-intent-record]: Require unresolved xsim-behavior and host-side simulator-discovery questions to carry safe defaults before upstream integration starts. — Phase 2 can proceed only if unresolved local behavior stays explicit and does not get replayed blindly.
 - [Phase 02]: Freeze the clean pre-merge branch head in a dedicated local anchor before any upstream merge attempt.
 - [Phase 02]: Seed one decision ledger with all LCU and inherited HR rows so Phase 2 conflict resolution stays tied to Phase 1 intent.
+- [Phase 02]: Keep the upstream CLI and experimental layout as the baseline, then carry forward only the narrow xsim and parser-safe differences that still have local justification.
+- [Phase 02]: Treat test/utils.py as a justified replacement rather than pretending the original fork hunk was valid Python.
 
 ### Pending Todos
 
@@ -85,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T08:28:21.821Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-04-12T08:41:31.575Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
