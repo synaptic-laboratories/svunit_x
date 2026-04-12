@@ -33,7 +33,7 @@ check_presence() {
 check_table() {
     mode=$1
 
-    require_file "$MATRIX_FILE"
+    check_presence
 
     awk -v mode="$mode" '
         function trim(value) {
