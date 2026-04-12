@@ -18,10 +18,11 @@ Bring upstream SVUnit changes into this fork without regressing the fork's Xilin
 - ✓ SVUnit supports multiple simulator backends through `bin/runSVUnit`, including flows relevant to Questa/Questa Advanced Simulator, Xilinx Vivado `xsim`, Verilator, and other vendor tools — existing
 - ✓ This fork already contains local Xilinx/Vivado support changes and follow-on adjustments in history, including the local line around `8e7d8d3` and subsequent edits — existing
 - ✓ The repository already has regression and documentation infrastructure through `test/`, `.github/workflows/ci.yml`, `docs/`, and the mapped codebase docs in `.planning/codebase/` — existing
+- ✓ Phase 1 confirmed upstream `v3.38.1` at commit `8e70653e2cbfe3ebe154a863a46bf482ded4bc19`, derived merge-base `84b88033590a1469a238be84d8526b25a9f29d10`, and recorded the remembered-baseline and marker disagreements explicitly as `human-review` — validated in Phase 1
+- ✓ Phase 1 produced a classified fork-delta matrix, executive summary, and blocking human-review handoff for the local Xilinx/Vivado delta — validated in Phase 1
 
 ### Active
 
-- [ ] Identify the fork-specific delta from upstream and document the intent of each local Xilinx/Vivado-related change before applying upstream sync work
 - [ ] Catch this fork up to upstream `svunit/svunit` changes against the user-specified `3.38.1` target while preserving required local behavior
 - [ ] Resolve upstream-vs-fork conflicts intelligently by using git history and change intent, not just textual diffs
 - [ ] Verify that the synchronized fork still passes the required regression flow on this machine using the certified Quartus flake as the sign-off environment for this stage
@@ -43,7 +44,7 @@ The user described the desired method clearly: use git history to understand wha
 
 The execution environment for this stage is also constrained: the Xilinx flake is still in progress, so sign-off for this round should happen on this machine using the certified Quartus flake. That makes Quartus-based regression the practical acceptance gate even though the fork must continue to preserve its Xilinx/Vivado-specific behavior.
 
-The upstream target needs one careful verification step during execution. The user specified upstream `https://github.com/svunit/svunit` release `3.38.1`, but the official GitHub releases page I checked before writing this file visibly listed `3.38.0` and did not clearly show `3.38.1`. That means the exact upstream tag/commit should be re-confirmed before the synchronization phase begins.
+Phase 1 completed that verification step. The upstream target is now pinned to `https://github.com/svunit/svunit.git` tag `v3.38.1`, peeled commit `8e70653e2cbfe3ebe154a863a46bf482ded4bc19`, with derived merge-base `84b88033590a1469a238be84d8526b25a9f29d10`. Phase 1 also preserved two deliberate review boundaries for later work: the remembered `v3.37.0` baseline does not equal the derived merge-base, and the candidate marker only resolves cleanly under one ancestry interpretation. Those disagreements are recorded as `human-review`, not unresolved execution blockers.
 
 ## Constraints
 
@@ -61,7 +62,8 @@ The upstream target needs one careful verification step during execution. The us
 | Make the local Xilinx/Vivado delta an explicit early analysis phase | Conflict resolution will be safer if local change intent is documented before upstream sync begins | ✓ Good |
 | Use Quartus-based regression as the stage sign-off gate | The certified Quartus flake is available now, while the Xilinx flake is still future work | ✓ Good |
 | Preserve local Xilinx/Vivado behavior where still needed, while minimizing unnecessary divergence from upstream | The fork should stay maintainable, but not at the cost of losing its local purpose | — Pending |
-| Re-confirm the exact upstream `3.38.1` reference before execution | The user named `3.38.1`, but the official release page I checked did not clearly confirm it | — Pending |
+| Re-confirm the exact upstream `3.38.1` reference before execution | Phase 1 pinned the upstream tag object, peeled commit, and derived merge-base in repo artifacts | ✓ Good |
+| Keep ancestry disagreement and unresolved Xilinx intent explicit for Phase 2 | Phase 1 found real ambiguity that should guide merge work, not be hidden by simplification | ✓ Good |
 
 ## Evolution
 
@@ -81,4 +83,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-11 after initialization*
+*Last updated: 2026-04-12 after Phase 1 completion*
