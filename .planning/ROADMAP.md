@@ -44,6 +44,10 @@ Plans:
   3. Maintainer can identify which local divergences were kept, rewritten, or replaced during the sync and why.
   4. Maintainer can find a human-review artifact listing any unresolved or risky merge outcomes before Quartus sign-off begins.
 **Plans**: 3 plans
+Plans:
+- [ ] `02-01-PLAN.md` — Install the Phase 2 validator, pre-merge anchor, and seeded decision/review ledgers from the Phase 1 evidence set
+- [ ] `02-02-PLAN.md` — Merge upstream `v3.38.1` and reconcile the CLI, runtime, experimental, helper-library, and host-side overlap by logical change unit
+- [ ] `02-03-PLAN.md` — Package the integration summary, pre-Quartus review ledger, and Phase 3 handoff with the final non-Quartus gate
 
 ### Phase 3: Quartus Verification & Sign-Off
 **Goal**: Maintainer can prove the synchronized fork passes this stage's required regression flow on this machine through the certified Quartus flake and can review what that sign-off does and does not cover.
