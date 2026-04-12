@@ -1,6 +1,6 @@
 //###########################################################################
 //
-//  Copyright 2011 The SVUnit Authors.
+//  Copyright 2011-2024 The SVUnit Authors.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -42,6 +42,9 @@ class svunit_testcase extends svunit_base;
   */
   local bit running = 0;
 
+  local bit actually_ran_tests = 0;
+
+  local svunit_test tests[$];
   local junit_xml::TestCase current_junit_test_case;
   local junit_xml::TestCase junit_test_cases[$];
 
@@ -69,6 +72,18 @@ class svunit_testcase extends svunit_base;
   extern virtual task teardown();
 
 
+  function void add_test(input svunit_test test);
+    tests.push_back(test);
+  endfunction
+
+
+  /* local */ typedef svunit_test array_of_tests[$];
+
+  function array_of_tests get_tests();
+    return tests;
+  endfunction
+
+
   function void add_junit_test_case(input string name);
     current_junit_test_case = new(name, get_name());
     junit_test_cases.push_back(current_junit_test_case);
@@ -81,6 +96,82 @@ class svunit_testcase extends svunit_base;
   function array_of_junit_test_cases as_junit_test_cases();
     return junit_test_cases;
   endfunction
+
+
+  task automatic run();
+    if ($test$plusargs("SVUNIT_LIST_TESTS")) begin
+      list_tests();
+      return;
+    end
+
+    run_tests();
+  endtask
+
+
+  local function void list_tests();
+    $display(name);
+    foreach (tests[i])
+      $display({ "    ", tests[i].get_name() });
+  endfunction
+
+
+  local task run_tests();
+    array_of_tests selected_tests = get_selected_tests();
+    if (selected_tests.size() == 0)
+      return;
+
+    `INFO("RUNNING");
+    foreach (selected_tests[i])
+      run_test(selected_tests[i]);
+
+    actually_ran_tests = 1;
+  endtask
+
+
+  local function array_of_tests get_selected_tests();
+    svunit_test selected_tests[$];
+    foreach (tests[i])
+      if (svunit_pkg::_filter.is_selected(this, tests[i].get_name()))
+        selected_tests.push_back(tests[i]);
+    return selected_tests;
+  endfunction
+
+
+  local task run_test(svunit_pkg::svunit_test test);
+    string _testName = test.get_name();
+    integer local_error_count = get_error_count();
+    string fileName;
+    int lineNumber;
+
+    `INFO($sformatf("%s::RUNNING", _testName));
+    svunit_pkg::current_tc = this;
+    add_junit_test_case(_testName);
+    start();
+    test.unit_test_setup();
+    fork
+      begin
+        fork
+          test.run();
+          begin
+            if (get_error_count() == local_error_count) begin
+              wait_for_error();
+            end
+          end
+        join_any
+`ifndef VERILATOR
+        #0;
+        disable fork;
+`endif
+      end
+    join
+    stop();
+    test.unit_test_teardown();
+    if (get_error_count() == local_error_count)
+      `INFO($sformatf("%s::PASSED", _testName));
+    else
+      `INFO($sformatf("%s::FAILED", _testName));
+    update_exit_status();
+  endtask
 
 endclass
 
@@ -217,6 +308,9 @@ endfunction
 function void svunit_testcase::report();
   string success_str = (success)? "PASSED":"FAILED";
 
+  if (!actually_ran_tests)
+    return;
+
   `INFO($sformatf("%0s (%0d of %0d tests passing)",
     success_str,
     test_count-error_count,
@@ -238,4 +332,3 @@ endtask
 */
 task svunit_testcase::teardown();
 endtask
-

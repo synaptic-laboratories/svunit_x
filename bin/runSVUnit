@@ -48,23 +48,26 @@ my $wavedrom;
 my @directory;
 my @simargs;
 my @compileargs;
+my @elabargs;
 my $outdir = ".";
 my $clean;
 my $vhdlfile;
 my @tests;
 my $filter;
 my $enable_experimental;
+my $list_tests;
 my $help;
 
 sub usage () {
   print "Usage:  runSVUnit [-s|--sim <simulator> -l|--log <log> -d|--define <macro> -f|--filelist <file> -U|-uvm -m|-mixedsim <vhdlfile>\n";
-  print "                  -r|--r_arg <option> -c|--c_arg <option> -o|--out <dir> -t|--test <test> --filter <filter>]\n";
+  print "                  -r|--r_arg <option> -c|--c_arg <option> -e|--e_arg <option> -o|--out <dir> -t|--test <test> --filter <filter>]\n";
   print "  -s|--sim <simulator>     : simulator is either of questa, modelsim, riviera, ius, xcelium, vcs, dsim, verilator, xsim\n";
   print "  -l|--log <log>           : simulation log file (default: run.log)\n";
   print "  -d|--define <macro>      : appended to the command line as +define+<macro>\n";
   print "  -f|--filelist <file>     : some verilog file list\n";
   print "  -r|--r_arg <option>      : specify additional runtime options\n";
   print "  -c|--c_arg <option>      : specify additional compile options\n";
+  print "  -e|--e_arg <option>      : specify additional elaboration options\n";
   print "  -U|--uvm                 : run SVUnit with UVM\n";
   print "  -o|--out                 : output directory for tmp and simulation files\n";
   print "  -t|--test                : specifies a unit test to run (multiple can be given)\n";
@@ -73,6 +76,7 @@ sub usage () {
   print "     --filter <filter>     : specify which tests to run, as <test_module>.<test_name>\n";
   print "     --directory           : only run svunit discovery on selected directories\n";
   print "     --enable-experimental : enable experimental features\n";
+  print "     --list-tests          : lists available tests without actually running them\n";
   print "  -h|--help                : prints this help screen\n";
   print "\n";
   exit 1;
@@ -101,6 +105,7 @@ GetOptions("l|log=s" => \$logfile,
            "U|uvm" => \$uvm,
            "r|r_arg=s" => \@simargs,
            "c|c_arg=s" => \@compileargs,
+           "e|e_arg=s" => \@elabargs,
            "o|out=s" => \$outdir,
            "m|mixedsim=s" => \$vhdlfile,
            "t|test=s{,}" => \@tests,
@@ -108,6 +113,7 @@ GetOptions("l|log=s" => \$logfile,
            "w|wavedrom" => \$wavedrom,
            "directory=s" => \@directory,
            "enable-experimental" => \$enable_experimental,
+           "list-tests" => \$list_tests,
            "h|help" => \$help
            ) or usage();
 
@@ -132,6 +138,8 @@ if ($simulator eq "verilator" && defined $vhdlfile) {
 
 clean();
 
+my $user_specified_simulator = $simulator;
+
 # Extract simulator from PATH if nothing passed as argument
 if ($simulator eq "") {
   my @sims = qw(xrun irun qrun vsim vcs dsim verilator xsim);
@@ -153,7 +161,11 @@ $simulator =~ s/ius/irun/;
 $simulator =~ s/xcelium/xrun/;
 
 if (not grep { $_ eq $simulator } qw(xrun irun modelsim riviera vcs dsim qrun verilator xsim)) {
-  print("Could not determine simulator. None found on 'PATH' and none specified via command line\n");
+  if ($user_specified_simulator ne "") {
+    print("Unknown simulator '$user_specified_simulator' specified via '--sim'\n");
+  } else {
+    print("Could not determine simulator. None found on 'PATH' and none specified via command line\n");
+  }
   usage()
 }
 
@@ -169,7 +181,7 @@ if ($simulator eq "modelsim" or $simulator eq "riviera") {
   $cmd .= "-f $vhdlfile " if $vhdlfile;
 } elsif ($simulator eq "verilator") {
   $cmd .= "verilator --binary --top-module testrunner";
-  $cmd .= qq! @compileargs!;
+  $cmd .= qq! @compileargs @elabargs!;
 } elsif ($simulator eq "xsim") {
   $cmd .= "xvhdl -f $vhdlfile && " if $vhdlfile;
   $cmd .= "xvlog --relax --sv --log $vlogfile ";
@@ -208,19 +220,22 @@ if ($simulator eq "modelsim" or $simulator eq "riviera") {
   if (!grep(/(^| )(-gui|-c|-i)( |$)/, @simargs)) {
     push @simargs, "-c";
   }
-  $cmd .= qq! @compileargs && vsim @simargs -lib work -do "run -all; quit" -l $logfile testrunner!;
+  my $vopt_elabargs = @elabargs ? qq!-voptargs="@elabargs"! : "";
+  $cmd .= qq! @compileargs && vsim $vopt_elabargs @simargs -lib work -do "run -all; quit" -l $logfile testrunner!;
 } elsif ($simulator eq "verilator") {
   my $verilator_simargs = "";
   $verilator_simargs .= " @simargs";
   if (defined $filter) {
     $verilator_simargs .= " +SVUNIT_FILTER=$filter";
   }
+  if (defined $list_tests) {
+    $verilator_simargs .= " +SVUNIT_LIST_TESTS";
+  }
   $cmd .= qq! && obj_dir/Vtestrunner $verilator_simargs 2>&1 | tee $logfile !;
 } elsif ($simulator eq "xsim") {
-  print( "\nSVUNIT:  use  runSVUnit -s xsim -c \"-v 2\" -r \"--tl --tp\"  when debuging test jobs that crash with Xilinx Vivado simulator.\n\n");
-  $cmd .= qq! @compileargs && xelab --debug all --relax --override_timeunit --timescale 1ns/1ps testrunner && xsim @simargs --R --log $logfile testrunner!;
+  $cmd .= qq! @compileargs && xelab --debug all --relax --override_timeunit --timescale 1ns/1ps testrunner @elabargs && xsim @simargs --R --log $logfile testrunner!;
 } else {
-  $cmd .= " @compileargs @simargs -top testrunner";
+  $cmd .= " @compileargs @elabargs @simargs -top testrunner";
 }
 
 if (defined $filter && $simulator ne "verilator") {
@@ -230,6 +245,15 @@ if (defined $filter && $simulator ne "verilator") {
   else {
     $cmd .= " +SVUNIT_FILTER=$filter";
   }
+}
+
+if (defined $list_tests) {
+    if ($simulator eq "xsim") {
+        $cmd .= " --testplusarg SVUNIT_LIST_TESTS";
+    }
+    else {
+        $cmd .= " +SVUNIT_LIST_TESTS";
+    }
 }
 
 my $build_cmd = "buildSVUnit -o $outdir";

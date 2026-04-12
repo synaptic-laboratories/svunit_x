@@ -1,6 +1,6 @@
 //###########################################################################
 //
-//  Copyright 2011-2021 The SVUnit Authors.
+//  Copyright 2021 The SVUnit Authors.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -16,12 +16,34 @@
 //
 //###########################################################################
 
-typedef class svunit_testcase;
-typedef class filter;
+module dummy_unit_test;
+
+  import svunit_pkg::*;
+  `include "svunit_defines.svh"
+
+  string name = "dummy_ut";
+  svunit_testcase svunit_ut;
 
 
-// The current testcase that is being executed.
-svunit_testcase current_tc;
+  function void build();
+    svunit_ut = new(name);
+  endfunction
 
-// The filter to apply on tests
-/* local */ const filter _filter = filter::get();
+  task setup();
+    svunit_ut.setup();
+  endtask
+
+  task teardown();
+    svunit_ut.teardown();
+  endtask
+
+
+  `SVUNIT_TESTS_BEGIN
+
+    `SVTEST(failing_test)
+      `FAIL_IF(1 < 2)
+    `SVTEST_END
+
+  `SVUNIT_TESTS_END
+
+endmodule

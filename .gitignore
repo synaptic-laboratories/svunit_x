@@ -1,8 +1,11 @@
 *.log
+*.bak
+*.bak.*
 
 # DVT
 .dvt/build.config.xml
 .dvt/*.ls
+.dvt/.build_config_dict/
 
 # Emacs
 *~

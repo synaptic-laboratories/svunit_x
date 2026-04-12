@@ -3,11 +3,13 @@ name: CI
 on: [push, pull_request]
 
 env:
-  VERILATOR_VERSION: v5.012
+  VERILATOR_VERSION: v5.024
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
 
     steps:
       - name: Check out repository code
@@ -23,7 +25,7 @@ jobs:
                 git help2man perl python3 make \
                 libfl2 \
                 libfl-dev \
-                zlibc zlib1g zlib1g-dev \
+                zlib1g zlib1g-dev \
                 git autoconf flex bison
 
       - name: Cache Verilator
@@ -57,10 +59,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.6"
-
-      - name: Set up testing environment
-        run: pip install -r test/requirements.txt
+          python-version: "3.8"
 
       - name: Install direnv
         run: sudo apt-get install -y direnv
@@ -69,4 +68,4 @@ jobs:
         run: |
           cd test
           direnv allow
-          direnv exec . pytest
+          direnv exec . pytest -n auto

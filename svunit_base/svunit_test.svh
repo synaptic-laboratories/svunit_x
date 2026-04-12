@@ -1,6 +1,6 @@
 //###########################################################################
 //
-//  Copyright 2011-2021 The SVUnit Authors.
+//  Copyright 2024 The SVUnit Authors.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -16,12 +16,18 @@
 //
 //###########################################################################
 
-typedef class svunit_testcase;
-typedef class filter;
+/*
+  Base class for tests defined using the `SVTEST macro
+*/
+virtual class svunit_test extends svunit_base;
+
+  function new(string name);
+    super.new(name);
+  endfunction
 
 
-// The current testcase that is being executed.
-svunit_testcase current_tc;
+  pure virtual task unit_test_setup();
+  pure virtual task run();
+  pure virtual task unit_test_teardown();
 
-// The filter to apply on tests
-/* local */ const filter _filter = filter::get();
+endclass

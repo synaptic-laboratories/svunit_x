@@ -11,6 +11,7 @@ SVUnit unit tests are run using runSVUnit. Usage of runSVUnit is as follows::
     -f|--filelist <file>     : some verilog file list
     -r|--r_arg <option>      : specify additional runtime options
     -c|--c_arg <option>      : specify additional compile options
+    -e|--e_arg <option>      : specify additional elaboration options
     -U|--uvm                 : run SVUnit with UVM
     -o|--out                 : output directory for tmp and simulation files
     -t|--test                : specifies a unit test to run (multiple can be given)
@@ -46,10 +47,10 @@ Through the use of \`include directives, both the unit test template and corresp
     The file svunit.f is automatically included for compilation provided it exists. Thus, files can be added to svunit.f without having to specify '-f svunit.f' on the command line.
 
 
-Adding Run Time and/or Compile Time Options
--------------------------------------------
+Adding Run Time and/or Compile and/or Elaboration Options
+---------------------------------------------------------
 
-It is possible to specified compile and run time options using the '-c_arg' and '-r_arg' switches respectively. All compile and run time arguments are passed directly to the simulator command line.
+It is possible to specify compile and run time options using the '-c_arg', '-e_arg' and '-r_arg' switches respectively. All compile, elaboration and run time arguments are passed directly to the simulator command line.
 
 
 Enable UVM Component Unit Testing
@@ -97,3 +98,10 @@ Both options are useful, as they serve different purposes.
 The '-t' option is helpful when API changes would require modifications to many unit test files, but you would like to update them one after the other.
 It is also a very blunt tool, as compilation can only be handled at the file level.
 The '--filter' option can be used to focus on finer subsets of tests.
+
+Listing Test Names
+------------------
+
+It is possible to list available tests without actually running them::
+
+    runSVUnit --list-tests

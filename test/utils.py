@@ -29,7 +29,7 @@ def all_files_in_dir(dirname):
             )
 
 def all_available_simulators():
-    simulators = [$]
+    simulators = []
 
     if shutil.which('irun'):
         simulators.append('irun')

@@ -1,6 +1,6 @@
 //###########################################################################
 //
-//  Copyright 2011-2021 The SVUnit Authors.
+//  Copyright 2011-2024 The SVUnit Authors.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 package svunit_pkg;
 
   const string svunit_version = { "SVUnit ", `__svunit_stringify(`SVUNIT_VERSION) };
+  `include "svunit_globals.svh"
 
   function void __svunit_fatal(input string str);
    `__svunit_fatal_d(str)
@@ -31,10 +32,11 @@ package svunit_pkg;
   `include "svunit_types.svh"
   `include "svunit_string_utils.svh"
   `include "svunit_base.sv"
+  `include "svunit_test.svh"
   `include "svunit_testcase.sv"
   `include "svunit_testsuite.sv"
   `include "svunit_testrunner.sv"
   `include "svunit_filter_for_single_pattern.svh"
   `include "svunit_filter.svh"
-  `include "svunit_globals.svh"
+
 endpackage

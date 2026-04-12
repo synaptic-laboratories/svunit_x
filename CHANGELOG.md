@@ -6,19 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [3.38.1] - 2026-03-22
+
+### Fixed
+- Fix compile performance in Xcelium (and probably other tools) when running with UVM
+- Fixed experimental code to work after internal refactoring of test execution classes
+- Fix experimental code to avoid clash with included files
+- Fix misleading error message from `runSVUnit` when unknown simulator specified via `--sim` option ([#153](https://github.com/svunit/svunit/issues/153))
+- Fix `create_unit_test.pl -help` printing error and usage twice instead of exiting cleanly ([#326](https://github.com/svunit/svunit/issues/326))
+- Fix invalid JUnit XML when failure messages contain XML special characters (see pull request [#364](https://github.com/svunit/svunit/issues/239))
+
+
+## [3.37.1] - 2024-11-08
+
+### Fixed
+
+- Fix experimental code to avoid clash with included files
+
+
+## [3.38.0] - 2024-05-02
 
 ### Added
 - Add support for Xilinx Vivado (TM) Simulator
+- Add possibility to specify elaboration options
+- Add possibility to list available tests without actually running them
 
 ### Fixed
 - Fix warning in VCS when using `SVUNIT_CLK_GEN
+- Stop printing "RUNNING" messages for test cases where all tests are filtered out ([#207](https://github.com/svunit/svunit/issues/207))
 
 
 ## [3.37.0] - 2023-09-18
 
 ### Added
 - Add support for Verilator
+- Add `--enable-experimental` option for `runSVUnit` which activates incubating features.
+  Currently, this includes a more streamlined way of defining tests.
 
 ### Fixed
 - Fix csh setup script to work with directory paths containing spaces
@@ -385,7 +408,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * ?
 
 
-[Unreleased]: https://github.com/svunit/svunit/compare/v3.37.0...HEAD
+[3.38.1]: https://github.com/svunit/svunit/compare/v3.38.0...v3.38.1
+[3.37.1]: https://github.com/svunit/svunit/compare/v3.37.0...v3.37.1
+[3.38.0]: https://github.com/svunit/svunit/compare/v3.37.0...v3.38.0
 [3.37.0]: https://github.com/svunit/svunit/compare/v3.36.1...v3.37.0
 [3.36.1]: https://github.com/svunit/svunit/compare/v3.36.0...v3.36.1
 [3.36.0]: https://github.com/svunit/svunit/compare/v3.35.0...v3.36.0
