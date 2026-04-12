@@ -1,6 +1,9 @@
 *.log
 *.bak
 *.bak.*
+.direnv/
+.quartus/
+result
 
 # DVT
 .dvt/build.config.xml

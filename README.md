@@ -40,6 +40,12 @@ You can source `Setup.csh` if you use the csh shell.
 source Setup.csh
 ```
 
+On this box, you can also enter the qualified Quartus Podman workflow through the repo flake.
+
+```shell
+nix develop
+```
+
 ### 2. Go somewhere outside `SVUNIT_INSTALL` (i.e. where you are right now)
 
 Start a class-under-test:
@@ -77,6 +83,41 @@ runSVUnit -s <simulator> # simulator is ius, questa, modelsim, riviera or vcs
 ### 6. Repeat steps 4 and 5 until done
 
 ### 7. Pat self on back
+
+## Qualified Quartus Podman workflow
+
+This repo now includes a `flake.nix` that consumes the qualified Altera Quartus Pro Podman source at `g_altera_quartus_pro_podman/r_src_v23_4_0_79` and exposes repo-local wrappers for this stage's Quartus sign-off flow.
+
+Build or refresh the local container image:
+
+```shell
+nix run .#quartus-tools -- build-image
+```
+
+Check that the container exposes the expected Quartus and Questa commands:
+
+```shell
+nix run .#svunit-quartus-check
+```
+
+Open a shell inside the Quartus container with this repo mounted at `/sll`:
+
+```shell
+nix run .#svunit-quartus-podman
+```
+
+Launch the Quartus GUI when `DISPLAY` is available:
+
+```shell
+nix run .#svunit-quartus-podman -- --quartus
+```
+
+By default the wrapper:
+
+- uses `localhost/quartus-pro-linux:23.4.0.79`
+- mounts the repo root into the container at `/sll`
+- persists container root state under `.quartus/root`
+- looks for `quartus_license.dat` and `questa_license.dat` in `/srv/share/repo/sll/g_sll_poc/g_2026/ContainerPlayPen/launch`
 
 
 ## Feedback
