@@ -17,13 +17,13 @@ Requirements for the current upstream catch-up stage. Each maps to one roadmap p
 
 - [x] **XILX-01**: Maintainer can trace local Xilinx/Vivado-related behavior to the commits and files that introduced or adjusted it
 - [x] **XILX-02**: Maintainer can document the intent of each material Xilinx/Vivado-related fork change in a reviewable repo artifact
-- [ ] **XILX-03**: Upstream integration preserves required Xilinx/Vivado-specific behavior or records an explicit justified replacement for it
+- [x] **XILX-03**: Upstream integration preserves required Xilinx/Vivado-specific behavior or records an explicit justified replacement for it
 
 ### Upstream Integration
 
-- [ ] **SYNC-01**: Maintainer can integrate changes from the confirmed upstream target into this fork without dropping required fork-specific behavior
-- [ ] **SYNC-02**: Conflicts between upstream and fork changes are resolved using git history and documented intent rather than text-only merge choices
-- [ ] **SYNC-03**: Any unresolved or risky conflict outcomes are recorded in a human-review artifact before sign-off
+- [x] **SYNC-01**: Maintainer can integrate changes from the confirmed upstream target into this fork without dropping required fork-specific behavior
+- [x] **SYNC-02**: Conflicts between upstream and fork changes are resolved using git history and documented intent rather than text-only merge choices
+- [x] **SYNC-03**: Any unresolved or risky conflict outcomes are recorded in a human-review artifact before sign-off
 
 ### Verification
 
@@ -66,10 +66,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BASE-03 | Phase 1 | Complete |
 | XILX-01 | Phase 1 | Complete |
 | XILX-02 | Phase 1 | Complete |
-| XILX-03 | Phase 2 | Pending |
-| SYNC-01 | Phase 2 | Pending |
-| SYNC-02 | Phase 2 | Pending |
-| SYNC-03 | Phase 2 | Pending |
+| XILX-03 | Phase 2 | Complete |
+| SYNC-01 | Phase 2 | Complete |
+| SYNC-02 | Phase 2 | Complete |
+| SYNC-03 | Phase 2 | Complete |
 | VERI-01 | Phase 3 | Pending |
 | VERI-02 | Phase 3 | Pending |
 | VERI-03 | Phase 3 | Pending |

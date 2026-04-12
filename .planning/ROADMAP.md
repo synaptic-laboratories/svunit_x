@@ -13,7 +13,7 @@ This roadmap treats the repo as a brownfield maintenance fork, not a greenfield 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Fork Delta Baseline & Intent Record** - Confirm the upstream target and classify the fork-specific Xilinx/Vivado delta before merge work starts. (completed 2026-04-12)
-- [ ] **Phase 2: History-Aware Upstream Integration** - Catch the fork up to upstream while preserving required local behavior and isolating risky merge outcomes for human review.
+- [x] **Phase 2: History-Aware Upstream Integration** - Catch the fork up to upstream while preserving required local behavior and isolating risky merge outcomes for human review. (completed 2026-04-12)
 - [ ] **Phase 3: Quartus Verification & Sign-Off** - Prove the synchronized fork passes this stage's required regression flow in the certified Quartus environment.
 - [ ] **Phase 4: Maintainer Documentation & Handoff** - Leave maintainers with the sign-off boundary, sync method, and deferred-work guidance in repo documentation.
 
@@ -45,9 +45,9 @@ Plans:
   4. Maintainer can find a human-review artifact listing any unresolved or risky merge outcomes before Quartus sign-off begins.
 **Plans**: 3 plans
 Plans:
-- [ ] `02-01-PLAN.md` — Install the Phase 2 validator, pre-merge anchor, and seeded decision/review ledgers from the Phase 1 evidence set
-- [ ] `02-02-PLAN.md` — Merge upstream `v3.38.1` and reconcile the CLI, runtime, experimental, helper-library, and host-side overlap by logical change unit
-- [ ] `02-03-PLAN.md` — Package the integration summary, pre-Quartus review ledger, and Phase 3 handoff with the final non-Quartus gate
+- [x] `02-01-PLAN.md` — Install the Phase 2 validator, pre-merge anchor, and seeded decision/review ledgers from the Phase 1 evidence set
+- [x] `02-02-PLAN.md` — Merge upstream `v3.38.1` and reconcile the CLI, runtime, experimental, helper-library, and host-side overlap by logical change unit
+- [x] `02-03-PLAN.md` — Package the integration summary, pre-Quartus review ledger, and Phase 3 handoff with the final non-Quartus gate
 
 ### Phase 3: Quartus Verification & Sign-Off
 **Goal**: Maintainer can prove the synchronized fork passes this stage's required regression flow on this machine through the certified Quartus flake and can review what that sign-off does and does not cover.
@@ -79,6 +79,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fork Delta Baseline & Intent Record | 3/3 | Complete    | 2026-04-12 |
-| 2. History-Aware Upstream Integration | 0/3 | Not started | - |
+| 2. History-Aware Upstream Integration | 3/3 | Complete | 2026-04-12 |
 | 3. Quartus Verification & Sign-Off | 0/2 | Not started | - |
 | 4. Maintainer Documentation & Handoff | 0/2 | Not started | - |
