@@ -1,0 +1,12 @@
+{
+  "current_branch_name": "master",
+  "current_branch_head": "23695f3e952f5f62b88cd9a7be9f8a97d9dde587",
+  "code_only_fork_head": "c2cb87111cf93cbf0f3f485730d314dbad3cb858",
+  "upstream_target_commit": "8e70653e2cbfe3ebe154a863a46bf482ded4bc19",
+  "merge_base": "84b88033590a1469a238be84d8526b25a9f29d10",
+  "pre_merge_anchor_branch": "phase2-pre-merge-anchor",
+  "working_tree_clean_before_merge": true,
+  "phase1_matrix_path": ".planning/phases/01-fork-delta-baseline-intent-record/01-fork-delta-matrix.md",
+  "phase1_human_review_path": ".planning/phases/01-fork-delta-baseline-intent-record/01-human-review.md",
+  "phase1_baseline_path": ".planning/phases/01-fork-delta-baseline-intent-record/01-upstream-baseline.json"
+}
