@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.38.1
 milestone_name: milestone
 status: executing
-stopped_at: Phase 1 complete
-last_updated: "2026-04-12T08:20:29.999Z"
-last_activity: 2026-04-12 -- Phase 02 execution started
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-04-12T08:28:21.823Z"
+last_activity: 2026-04-12
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
-  percent: 67
+  completed_plans: 5
+  percent: 83
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 02 (history-aware-upstream-integration) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 02
-Last activity: 2026-04-12 -- Phase 02 execution started
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-12
 
 Progress: [██░░░░░░░░] 25%
 
@@ -54,6 +54,7 @@ Progress: [██░░░░░░░░] 25%
 | Phase 01-fork-delta-baseline-intent-record P01 | 4m41s | 3 tasks | 6 files |
 | Phase 01-fork-delta-baseline-intent-record P02 | 8m33s | 3 tasks | 6 files |
 | Phase 01-fork-delta-baseline-intent-record P03 | checkpointed | 3 tasks | 3 files |
+| Phase 02 P01 | 5m 15s | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - [Phase 01-fork-delta-baseline-intent-record]: Treat stable-runtime and experimental parser-compatibility edits as rewrite candidates, keep helper-library parser fixes as local until proven unnecessary, and leave the suspicious test/utils.py simulator edit as human-review.
 - [Phase 01-fork-delta-baseline-intent-record]: Keep the remembered baseline mismatch and candidate-marker semantic split explicit in the Phase 2 handoff instead of collapsing them into one narrative. — Phase 2 needs exact unresolved ancestry context, not a simplified story that hides disagreement.
 - [Phase 01-fork-delta-baseline-intent-record]: Require unresolved xsim-behavior and host-side simulator-discovery questions to carry safe defaults before upstream integration starts. — Phase 2 can proceed only if unresolved local behavior stays explicit and does not get replayed blindly.
+- [Phase 02]: Freeze the clean pre-merge branch head in a dedicated local anchor before any upstream merge attempt.
+- [Phase 02]: Seed one decision ledger with all LCU and inherited HR rows so Phase 2 conflict resolution stays tied to Phase 1 intent.
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T07:02:30Z
-Stopped at: Phase 1 complete
+Last session: 2026-04-12T08:28:21.821Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
