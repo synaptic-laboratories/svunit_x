@@ -27,12 +27,12 @@
 
   inputs = {
     quartus-podman = {
-      url = "git+ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79";
+      url = "git+ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79";
     };
     verilator-certified = {
       # Provides verilator 5.044 binary + cc + make.  Uses nixos-unstable
       # internally; we do NOT follow its nixpkgs — we only consume binaries.
-      url = "git+ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044";
+      url = "git+ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044";
     };
     nixpkgs.follows = "quartus-podman/nixpkgs";
   };

@@ -57,15 +57,15 @@
       "locked": {
         "lastModified": 1775997712,
         "narHash": "sha256-Ywfp61tHVyIajZZsry1pvETxbllBdXHZyY0sLbsQe6I=",
-        "ref": "refs/heads/master",
+        "ref": "master",
         "rev": "448d988f1c0bd19f4f53caa53d1d37c437d3621c",
         "revCount": 2,
         "type": "git",
-        "url": "ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79"
+        "url": "ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79"
       },
       "original": {
         "type": "git",
-        "url": "ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79"
+        "url": "ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79"
       }
     },
     "root": {
@@ -105,11 +105,11 @@
         "rev": "f1d602ad35929aa583b37cb1d4cc1413c9f5d572",
         "revCount": 11,
         "type": "git",
-        "url": "ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044"
+        "url": "ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044"
       },
       "original": {
         "type": "git",
-        "url": "ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044"
+        "url": "ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044"
       }
     }
   },
