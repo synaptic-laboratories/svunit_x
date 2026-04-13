@@ -1,18 +1,75 @@
 {
-  description = "SVUnit X development shell with qualified Altera Quartus Pro Podman tooling";
+  description = "SVUnit X — qualification, certification and development shell";
+
+  # ---------------------------------------------------------------------------
+  # Dependency architecture
+  #
+  # This flake provides a single svunit-certify command that supports multiple
+  # simulators (qrun, modelsim, verilator, and later xsim).  All simulator
+  # runtimes are bundled into one closure so a single `nix run .#svunit-certify`
+  # works for any --simulator flag without per-simulator Nix packages.
+  #
+  # Execution model per simulator:
+  #   qrun / modelsim  — Tests run INSIDE a Podman container (Quartus Pro image).
+  #                       The container has its own python3 and bootstraps pip/pytest
+  #                       at runtime.  Host python3 and Verilator deps are on PATH
+  #                       but never visible to the container (isolated filesystem).
+  #   verilator         — Tests run NATIVELY on the host.  Needs verilator, gcc,
+  #                       make, and python3-with-pytest on the host PATH.
+  #   xsim (planned)    — Will follow the container pattern (Vivado image).
+  #
+  # Why not per-simulator packages?  The shared script logic (argument parsing,
+  # run-ID generation, JUnit XML parsing, artefact writing, symlink management)
+  # would need to be duplicated or extracted.  The overhead of carrying unused
+  # deps on PATH is negligible (Nix store deduplication), and the container
+  # isolation means host-side deps cannot interfere with container-based runs.
+  # ---------------------------------------------------------------------------
 
   inputs = {
     quartus-podman = {
       url = "git+ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79";
     };
+    verilator-certified = {
+      # Provides verilator 5.044 binary + cc + make.  Uses nixos-unstable
+      # internally; we do NOT follow its nixpkgs — we only consume binaries.
+      url = "git+ssh://localhost/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044";
+    };
     nixpkgs.follows = "quartus-podman/nixpkgs";
   };
 
-  outputs = { nixpkgs, quartus-podman, ... }:
+  outputs = { nixpkgs, quartus-podman, verilator-certified, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       qualifiedQuartusRoot = "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79";
+      svunitArtefactsRoot = "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts";
+      certToolsDir = "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_sll_tools_qualified/r_cert_tools";
+      qualifiedVerilatorRoot = "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044";
+      verilatorPkg = verilator-certified.packages.${system}.default;
+      verilatorCc = verilator-certified.packages.${system}.cc;
+      verilatorMake = verilator-certified.packages.${system}.make;
+
+      # Python with pytest for native (non-container) test runs.
+      # Container-based simulators (qrun, modelsim) bootstrap their own
+      # pip+pytest inside the container and never see this python.
+      #
+      # pytest-datafiles is pinned to 2.0: the SVUnit test suite uses the
+      # .as_cwd() API which was removed in 3.x (returns PosixPath instead).
+      # The Questa container also pins 2.0 via pip install.
+      pytestDatafiles2 = pkgs.python3Packages.buildPythonPackage rec {
+        pname = "pytest-datafiles";
+        version = "2.0";
+        src = pkgs.fetchPypi {
+          inherit pname version;
+          hash = "sha256-FDMpy7HbuwevJPiPpGaOL1nOIzaWzxLEn9HJjRdW2/k=";
+        };
+        propagatedBuildInputs = [ pkgs.python3Packages.pytest ];
+        doCheck = false;
+      };
+      pythonWithPytest = pkgs.python3.withPackages (ps: [
+        ps.pytest
+        pytestDatafiles2
+      ]);
       installerRoot = "/srv/share/repo/sll/g_sll_poc/g_2026/ContainerPlayPen/quartus-pro-linux/23.4.0.79/b_individual";
       licenseRoot = "/srv/share/repo/sll/g_sll_poc/g_2026/ContainerPlayPen/launch";
       imageTag = "localhost/quartus-pro-linux:23.4.0.79";
@@ -180,6 +237,668 @@
           exec svunit-quartus-podman /bin/bash -c "$check_script"
         '';
       };
+
+      # --- Timing comparison report ---
+      # Scans artefacts root for timing-summary.json files, finds the latest
+      # run per simulator per hostname, and produces a cross-simulator comparison.
+      svunitTimingReport = pkgs.writeShellApplication {
+        name = "svunit-timing-report";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.jq
+          pythonWithPytest
+        ];
+        text = ''
+          set -euo pipefail
+
+          ARTEFACTS_ROOT="''${1:-${svunitArtefactsRoot}}"
+
+          if [ ! -d "$ARTEFACTS_ROOT" ]; then
+            echo "ERROR: Artefacts directory not found: $ARTEFACTS_ROOT" >&2
+            exit 2
+          fi
+
+          # Write the report script to a temp file to avoid Nix string escaping
+          # issues with Python's single/double quotes
+          REPORT_SCRIPT="$(mktemp --suffix=.py)"
+          trap 'rm -f "$REPORT_SCRIPT"' EXIT
+          cat > "$REPORT_SCRIPT" << 'PYEOF'
+          import json, os, sys
+          from pathlib import Path
+          from collections import defaultdict
+
+          root = Path(sys.argv[1])
+
+          # Collect all timing-summary.json files
+          summaries = []
+          for p in sorted(root.glob("*/timing-summary.json")):
+              try:
+                  with open(p) as f:
+                      data = json.load(f)
+                  data["_path"] = str(p.parent.name)
+                  summaries.append(data)
+              except (json.JSONDecodeError, KeyError):
+                  continue
+
+          if not summaries:
+              print("No timing-summary.json files found in", root)
+              sys.exit(0)
+
+          # Group by hostname, pick latest run_id per (hostname, simulator)
+          latest = {}
+          for s in summaries:
+              key = (s.get("hostname", "unknown"), s.get("simulator", "unknown"))
+              existing = latest.get(key)
+              if existing is None or s.get("run_id", "") > existing.get("run_id", ""):
+                  latest[key] = s
+
+          # Group by hostname for reporting
+          by_host = defaultdict(dict)
+          for (host, sim), data in sorted(latest.items()):
+              by_host[host][sim] = data
+
+          for host, sims in sorted(by_host.items()):
+              print(f"# Timing Report \u2014 {host}")
+              print()
+
+              # Summary table
+              print("| Simulator | Run ID | Wall Time | Tests | Passed | Skipped |")
+              print("|-----------|--------|-----------|-------|--------|---------|")
+              for sim_name, data in sorted(sims.items()):
+                  wt = data.get("wall_time_s", 0)
+                  mm, ss = divmod(wt, 60)
+                  wall_str = f"{int(mm)}m{ss:.1f}s" if mm else f"{wt:.1f}s"
+                  total = data.get("tests_total", 0)
+                  passed = sum(1 for t in data.get("tests", []) if t["status"] == "PASSED")
+                  skipped = sum(1 for t in data.get("tests", []) if t["status"] == "SKIPPED")
+                  run_id = data.get("run_id", "?")
+                  print(f"| {sim_name} | {run_id} | {wall_str} | {total} | {passed} | {skipped} |")
+              print()
+
+              # Per-test comparison if multiple simulators
+              sim_names = sorted(sims.keys())
+              if len(sim_names) >= 2:
+                  joiner = " vs "
+                  print(f"## Per-test comparison ({joiner.join(sim_names)})")
+                  print()
+
+                  # Build lookup: base_name -> {sim: duration}
+                  test_data = defaultdict(dict)
+                  for sim_name, data in sims.items():
+                      for t in data.get("tests", []):
+                          base = t.get("base_name", t["name"])
+                          test_data[base][sim_name] = t
+
+                  # Header
+                  cols = " | ".join(f"{s} (s)" for s in sim_names)
+                  header = f"| Test | {cols} | Ratio |"
+                  sep = "|" + "|".join(["---"] * (len(sim_names) + 2)) + "|"
+                  print(header)
+                  print(sep)
+
+                  # Rows sorted by first simulator's time descending
+                  rows = []
+                  for base, by_sim in test_data.items():
+                      vals = []
+                      for s in sim_names:
+                          if s in by_sim and by_sim[s]["status"] == "PASSED":
+                              vals.append(by_sim[s]["duration_s"])
+                          else:
+                              vals.append(None)
+                      rows.append((base, vals))
+
+                  rows.sort(key=lambda r: -(r[1][0] or 0))
+
+                  for base, vals in rows:
+                      val_strs = []
+                      for v in vals:
+                          val_strs.append(f"{v:.3f}" if v is not None else "N/A")
+                      # ratio: last/first if both present
+                      if len(vals) >= 2 and vals[0] and vals[-1] and vals[0] > 0:
+                          ratio = f"{vals[-1] / vals[0]:.1f}x"
+                      else:
+                          ratio = "N/A"
+                      col_str = " | ".join(val_strs)
+                      print(f"| {base} | {col_str} | {ratio} |")
+
+                  print()
+                  # Aggregate stats
+                  for i, s in enumerate(sim_names):
+                      durations = [r[1][i] for r in rows if r[1][i] is not None]
+                      if durations:
+                          avg = sum(durations) / len(durations)
+                          total_d = sum(durations)
+                          print(f"**{s}**: {len(durations)} tests, total {total_d:.1f}s, avg {avg:.2f}s/test")
+                  # Overall ratio
+                  common = [(r[1][0], r[1][-1]) for r in rows
+                            if r[1][0] is not None and r[1][-1] is not None
+                            and r[1][0] > 0]
+                  if common:
+                      ratios = [b / a for a, b in common]
+                      avg_ratio = sum(ratios) / len(ratios)
+                      print(f"**Mean ratio** ({sim_names[-1]}/{sim_names[0]}): {avg_ratio:.2f}x across {len(common)} common tests")
+              print()
+          PYEOF
+          python3 "$REPORT_SCRIPT" "$ARTEFACTS_ROOT"
+        '';
+      };
+
+      svunitCertify = pkgs.writeShellApplication {
+        name = "svunit-certify";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.gawk
+          pkgs.gnugrep
+          pkgs.jq
+          pkgs.perl
+          pkgs.podman
+          pythonWithPytest
+          verilatorPkg
+          verilatorCc
+          verilatorMake
+        ];
+        text = ''
+          set -euo pipefail
+
+          # --- Qualification helpers ---
+          # shellcheck source=/dev/null
+          source "${certToolsDir}/scripts/qualification-helpers.sh"
+
+          TOOL_GROUP="g_svunit_x"
+          TOOL_VERSION="r_v3_38_1_x0_2_0"
+          QUALIFIED_VERSION="3.38.1-x0.2.0"
+          ARTEFACTS_ROOT="${svunitArtefactsRoot}"
+
+          SIMULATOR=""
+          OUTPUT_DIR=""
+          PYTEST_FILTER=""
+          REPO_ROOT="''${REPO_ROOT:-$(pwd)}"
+
+          usage() {
+            cat <<USAGE
+          Usage: svunit-certify --simulator <sim> [--output-dir DIR] [--filter EXPR]
+
+          Simulators:
+            qrun        Questa qrun (via Quartus Pro Podman container)
+            modelsim    Questa modelsim (via Quartus Pro Podman container)
+            verilator   Verilator 5.044 (native, no container)
+            xsim        Xilinx xsim (via Vivado container) [not yet implemented]
+
+          Options:
+            --output-dir DIR   Artefact output directory (default: per qualification standard)
+            --filter EXPR      Pytest -k filter expression (default: by simulator name)
+          USAGE
+            exit 2
+          }
+
+          while [ $# -gt 0 ]; do
+            case "$1" in
+              --simulator|-s) SIMULATOR="$2"; shift 2 ;;
+              --output-dir|-o) OUTPUT_DIR="$2"; shift 2 ;;
+              --filter|-k) PYTEST_FILTER="$2"; shift 2 ;;
+              --help|-h) usage ;;
+              *) echo "Unknown argument: $1" >&2; usage ;;
+            esac
+          done
+
+          if [ -z "$SIMULATOR" ]; then
+            echo "ERROR: --simulator is required" >&2
+            usage
+          fi
+
+          # --- Simulator-specific configuration ---
+          IMAGE=""
+          IMAGE_ID="N/A"
+          CONTAINER_RUNTIME=""
+          LICENSE_DIR=""
+          EXPECTED_QUARTUS_VERSION=""
+          EXPECTED_QUESTA_VERSION=""
+          EXPECTED_VERILATOR_VERSION=""
+          VERILATOR_STORE_PATH=""
+          SIM_DISPLAY_NAME=""
+
+          case "$SIMULATOR" in
+            qrun|modelsim)
+              IMAGE="''${IMAGE:-${imageTag}}"
+              CONTAINER_RUNTIME="''${CONTAINER_RUNTIME:-podman}"
+              LICENSE_DIR="''${LICENSE_DIR:-${licenseRoot}}"
+              EXPECTED_QUARTUS_VERSION="Version 23.4.0 Build 79"
+              EXPECTED_QUESTA_VERSION="2023.3"
+              SIM_DISPLAY_NAME="Questa FPGA Edition 2023.3 (via Quartus Pro 23.4.0.79 container)"
+              # Exclude UVM tests that require svverification license (randomize())
+              if [ -z "$PYTEST_FILTER" ]; then
+                PYTEST_FILTER="$SIMULATOR and not uvm_simple_model"
+              fi
+              ;;
+            verilator)
+              EXPECTED_VERILATOR_VERSION="5.044"
+              # shellcheck disable=SC2016
+              VERILATOR_STORE_PATH='${verilatorPkg}'
+              SIM_DISPLAY_NAME="Verilator $EXPECTED_VERILATOR_VERSION (native, qualified from g_verilator/r_v5_044)"
+              if [ -z "$PYTEST_FILTER" ]; then
+                PYTEST_FILTER="verilator"
+              fi
+              ;;
+            xsim)
+              echo "ERROR: Vivado/xsim certification not yet implemented." >&2
+              exit 2
+              ;;
+            *)
+              echo "ERROR: Unknown simulator: $SIMULATOR" >&2
+              usage
+              ;;
+          esac
+
+          PYTEST_FILTER="''${PYTEST_FILTER:-$SIMULATOR}"
+
+          if [ ! -f "$REPO_ROOT/Setup.bsh" ]; then
+            echo "ERROR: Setup.bsh not found. Run from the SVUnit repo root or set REPO_ROOT." >&2
+            exit 2
+          fi
+
+          # --- Simulator-specific pre-validation ---
+          case "$SIMULATOR" in
+            qrun|modelsim)
+              for lic in quartus_license.dat questa_license.dat; do
+                if [ ! -f "$LICENSE_DIR/$lic" ]; then
+                  echo "ERROR: Missing $LICENSE_DIR/$lic" >&2
+                  exit 2
+                fi
+              done
+              if ! "$CONTAINER_RUNTIME" image exists "$IMAGE" >/dev/null 2>&1; then
+                echo "ERROR: Container image $IMAGE not found." >&2
+                echo "Run 'nix run .#quartus-tools -- build-image' first." >&2
+                exit 2
+              fi
+              ;;
+            verilator)
+              if ! command -v verilator >/dev/null 2>&1; then
+                echo "ERROR: verilator binary not found on PATH." >&2
+                exit 2
+              fi
+              if ! verilator --version 2>&1 | grep -qF "$EXPECTED_VERILATOR_VERSION"; then
+                echo "ERROR: verilator version mismatch. Expected $EXPECTED_VERILATOR_VERSION, got: $(verilator --version 2>&1)" >&2
+                exit 2
+              fi
+              if ! command -v gcc >/dev/null 2>&1; then
+                echo "ERROR: gcc not found on PATH (required for Verilator compilation)." >&2
+                exit 2
+              fi
+              if ! command -v make >/dev/null 2>&1; then
+                echo "ERROR: make not found on PATH (required for Verilator compilation)." >&2
+                exit 2
+              fi
+              ;;
+          esac
+
+          # --- Build run ID per qualification standard ---
+          qh_detect_gpu
+          qh_build_run_id --no-gpu-suffix
+
+          OUTPUT_DIR="''${OUTPUT_DIR:-$ARTEFACTS_ROOT/$QH_RUN_ID}"
+          mkdir -p "$OUTPUT_DIR"
+
+          SVUNIT_COMMIT="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo "unknown")"
+
+          # --- Simulator-specific pre-run setup ---
+          case "$SIMULATOR" in
+            qrun|modelsim)
+              IMAGE_ID="$("$CONTAINER_RUNTIME" image inspect "$IMAGE" --format '{{.Id}}' 2>/dev/null || echo "unknown")"
+              "$CONTAINER_RUNTIME" inspect "$IMAGE" > "$OUTPUT_DIR/image-inspect.json" 2>/dev/null || true
+              ;;
+          esac
+
+          echo "=== SVUnit Qualification ==="
+          echo "Tool:       $TOOL_GROUP $QUALIFIED_VERSION"
+          echo "Simulator:  $SIMULATOR ($SIM_DISPLAY_NAME)"
+          echo "Run ID:     $QH_RUN_ID"
+          echo "Output:     $OUTPUT_DIR"
+          echo "Filter:     $PYTEST_FILTER"
+          echo ""
+
+          # --- Run tests (simulator-specific) ---
+          EXIT_CODE=0
+
+          case "$SIMULATOR" in
+            qrun|modelsim)
+              echo "--- Running qualification inside container ---"
+
+              # shellcheck disable=SC2016
+              container_script="$(cat <<'CONTAINER_EOF'
+          set -euo pipefail
+
+          # --- Bootstrap pytest ---
+          python3 -c "
+          import urllib.request, tempfile, subprocess, sys
+          f = tempfile.NamedTemporaryFile(suffix='.py', delete=False)
+          urllib.request.urlretrieve('https://bootstrap.pypa.io/get-pip.py', f.name)
+          subprocess.check_call([sys.executable, f.name, '--break-system-packages', '-q'])
+          "
+          pip3 install --break-system-packages -q "pytest>=7,<9" "pytest-datafiles==2.0" 2>&1
+
+          # --- Version checks ---
+          echo "--- version checks ---"
+          fail=0
+          if ! quartus_sh --version 2>&1 | grep -qF "$EXPECTED_QUARTUS_VERSION"; then
+            echo "FAIL: quartus_sh version does not match $EXPECTED_QUARTUS_VERSION" >&2
+            fail=1
+          else
+            echo "OK: quartus_sh version matches $EXPECTED_QUARTUS_VERSION"
+          fi
+          for tool in qrun vlog vsim; do
+            if ! "$tool" -version 2>&1 | grep -qF "$EXPECTED_QUESTA_VERSION"; then
+              echo "FAIL: $tool version does not match $EXPECTED_QUESTA_VERSION" >&2
+              fail=1
+            else
+              echo "OK: $tool version matches $EXPECTED_QUESTA_VERSION"
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo "FAIL: version smoke checks failed" >&2
+            exit 1
+          fi
+
+          # --- Run SVUnit test suite ---
+          cd /sll
+          source Setup.bsh
+          cd test
+          echo ""
+          echo "--- pytest -k $PYTEST_FILTER ---"
+          python3 -m pytest -v -k "$PYTEST_FILTER" \
+            --tb=short \
+            --durations=0 \
+            --junitxml=/artefacts/tests.xml \
+            2>&1 || true
+          CONTAINER_EOF
+              )"
+
+              "$CONTAINER_RUNTIME" run --rm \
+                --net=host \
+                --cap-add=NET_ADMIN \
+                -e LM_LICENSE_FILE=/opt/quartus_license.dat:/opt/questa_license.dat \
+                -e QUARTUS_PATH="${quartusInstallRoot}" \
+                -e QUARTUS_ROOTDIR="${quartusInstallRoot}/quartus" \
+                -e SOPC_KIT_NIOS2="${quartusInstallRoot}/nios2eds" \
+                -e QSYS_ROOTDIR="${quartusInstallRoot}/qsys/bin" \
+                -e QUARTUS_64BIT=1 \
+                -e LANG=C.UTF-8 \
+                -e LC_ALL=C.UTF-8 \
+                -e PATH="${quartusContainerPath}" \
+                -e EXPECTED_QUARTUS_VERSION="$EXPECTED_QUARTUS_VERSION" \
+                -e EXPECTED_QUESTA_VERSION="$EXPECTED_QUESTA_VERSION" \
+                -e PYTEST_FILTER="$PYTEST_FILTER" \
+                -v "$REPO_ROOT:/sll" \
+                -v "$LICENSE_DIR/quartus_license.dat:/opt/quartus_license.dat:ro" \
+                -v "$LICENSE_DIR/questa_license.dat:/opt/questa_license.dat:ro" \
+                -v "$OUTPUT_DIR:/artefacts" \
+                "$IMAGE" /bin/bash -c "$container_script" \
+                > "$OUTPUT_DIR/test-log.txt" 2>&1 || EXIT_CODE=$?
+              ;;
+
+            verilator)
+              echo "--- Running qualification natively (Verilator) ---"
+
+              # --- Version checks ---
+              echo "--- version checks ---"
+              ACTUAL_VER="$(verilator --version 2>&1)"
+              echo "OK: verilator version = $ACTUAL_VER"
+              echo "OK: gcc version = $(gcc --version 2>&1 | head -1)"
+              echo "OK: make version = $(make --version 2>&1 | head -1)"
+
+              # --- Run SVUnit test suite natively ---
+              # pytest is provided by pythonWithPytest in runtimeInputs (no pip needed)
+              (
+                cd "$REPO_ROOT"
+                # shellcheck source=/dev/null
+                source Setup.bsh
+                cd test
+                echo ""
+                echo "--- pytest -k $PYTEST_FILTER ---"
+                python3 -m pytest -v -k "$PYTEST_FILTER" \
+                  --tb=short \
+                  --durations=0 \
+                  --junitxml="$OUTPUT_DIR/tests.xml" \
+                  2>&1 || true
+              ) > "$OUTPUT_DIR/test-log.txt" 2>&1 || EXIT_CODE=$?
+              ;;
+          esac
+
+          # --- Determine pass/fail from JUnit XML ---
+          if [ -f "$OUTPUT_DIR/tests.xml" ]; then
+            TOTAL="$(grep -oP '\btests="\K[0-9]+' "$OUTPUT_DIR/tests.xml" | head -1 || echo "0")"
+            FAILURES="$(grep -oP '\bfailures="\K[0-9]+' "$OUTPUT_DIR/tests.xml" | head -1 || echo "0")"
+            ERRORS="$(grep -oP '\berrors="\K[0-9]+' "$OUTPUT_DIR/tests.xml" | head -1 || echo "0")"
+            SKIPPED="$(grep -oP '\bskipped="\K[0-9]+' "$OUTPUT_DIR/tests.xml" | head -1 || echo "0")"
+            PASSED=$((TOTAL - FAILURES - ERRORS - SKIPPED))
+          else
+            TOTAL=0; FAILURES=0; ERRORS=0; SKIPPED=0; PASSED=0
+          fi
+
+          if [ "$FAILURES" -eq 0 ] && [ "$ERRORS" -eq 0 ] && [ "$PASSED" -gt 0 ]; then
+            STATUS="PASS"
+          else
+            STATUS="FAIL"
+          fi
+
+          # --- timing-summary.json from JUnit XML ---
+          if [ -f "$OUTPUT_DIR/tests.xml" ]; then
+            TIMING_SCRIPT="$(mktemp --suffix=.py)"
+            cat > "$TIMING_SCRIPT" << 'TIMING_PYEOF'
+          import xml.etree.ElementTree as ET, json, sys
+          tree = ET.parse(sys.argv[1])
+          root = tree.getroot()
+          wall = float(root.find(".//testsuite").get("time", root.get("time", "0")))
+          tests = []
+          for tc in root.iter("testcase"):
+              name = tc.get("name", "")
+              classname = tc.get("classname", "")
+              t = float(tc.get("time", "0"))
+              if tc.find("skipped") is not None:
+                  status = "SKIPPED"
+              elif tc.find("failure") is not None:
+                  status = "FAILED"
+              elif tc.find("error") is not None:
+                  status = "ERROR"
+              else:
+                  status = "PASSED"
+              # normalise name: strip [simulator] suffix for cross-sim comparison
+              base = name.rsplit("[", 1)[0] if "[" in name else name
+              tests.append({"name": name, "base_name": base, "classname": classname,
+                            "duration_s": round(t, 3), "status": status})
+          tests.sort(key=lambda x: -x["duration_s"])
+          doc = {
+              "simulator": sys.argv[2],
+              "hostname": sys.argv[3],
+              "run_id": sys.argv[4],
+              "wall_time_s": round(wall, 3),
+              "tests_total": len(tests),
+              "tests": tests
+          }
+          with open(sys.argv[5], "w") as f:
+              json.dump(doc, f, indent=2)
+          TIMING_PYEOF
+            python3 "$TIMING_SCRIPT" "$OUTPUT_DIR/tests.xml" "$SIMULATOR" "$(hostname)" "$QH_RUN_ID" \
+              "$OUTPUT_DIR/timing-summary.json"
+            rm -f "$TIMING_SCRIPT"
+            echo "Wrote timing-summary.json ($(jq '.tests | length' "$OUTPUT_DIR/timing-summary.json") tests)"
+          fi
+
+          # --- build-info.json via qh_build_info_json + simulator extensions ---
+          qh_build_info_json "$OUTPUT_DIR/build-info.json" \
+            "$TOOL_GROUP" "$TOOL_VERSION" "$QUALIFIED_VERSION" \
+            "$REPO_ROOT" "nixos-25.05" "generic"
+
+          # Append simulator-specific fields to build-info.json
+          TMP_JSON="$(mktemp)"
+          JQ_COMMON=(
+            --arg sim "$SIMULATOR"
+            --arg sim_display "$SIM_DISPLAY_NAME"
+            --arg svunit_commit "$SVUNIT_COMMIT"
+            --arg pytest_filter "$PYTEST_FILTER"
+            --arg status "$STATUS"
+            --argjson tests_total "$TOTAL"
+            --argjson tests_passed "$PASSED"
+            --argjson tests_failed "$FAILURES"
+            --argjson tests_errors "$ERRORS"
+            --argjson tests_skipped "$SKIPPED"
+            --argjson exit_code "$EXIT_CODE"
+          )
+
+          case "$SIMULATOR" in
+            qrun|modelsim)
+              jq \
+                "''${JQ_COMMON[@]}" \
+                --arg image_tag "$IMAGE" \
+                --arg image_id "$IMAGE_ID" \
+                --arg quartus_version "$EXPECTED_QUARTUS_VERSION" \
+                --arg questa_version "$EXPECTED_QUESTA_VERSION" \
+                '. + {
+                  simulator: $sim, simulator_display: $sim_display,
+                  container_image_tag: $image_tag, container_image_id: $image_id,
+                  quartus_version: $quartus_version, questa_version: $questa_version,
+                  svunit_commit: $svunit_commit, pytest_filter: $pytest_filter,
+                  qualification_status: $status,
+                  tests_total: $tests_total, tests_passed: $tests_passed,
+                  tests_failed: $tests_failed, tests_errors: $tests_errors,
+                  tests_skipped: $tests_skipped, exit_code: $exit_code
+                }' "$OUTPUT_DIR/build-info.json" > "$TMP_JSON"
+              ;;
+            verilator)
+              jq \
+                "''${JQ_COMMON[@]}" \
+                --arg verilator_version "$EXPECTED_VERILATOR_VERSION" \
+                --arg verilator_store_path "$VERILATOR_STORE_PATH" \
+                '. + {
+                  simulator: $sim, simulator_display: $sim_display,
+                  verilator_version: $verilator_version,
+                  verilator_store_path: $verilator_store_path,
+                  svunit_commit: $svunit_commit, pytest_filter: $pytest_filter,
+                  qualification_status: $status,
+                  tests_total: $tests_total, tests_passed: $tests_passed,
+                  tests_failed: $tests_failed, tests_errors: $tests_errors,
+                  tests_skipped: $tests_skipped, exit_code: $exit_code
+                }' "$OUTPUT_DIR/build-info.json" > "$TMP_JSON"
+              ;;
+          esac
+          mv "$TMP_JSON" "$OUTPUT_DIR/build-info.json"
+
+          # --- qualification-results.md ---
+          OS_VER="$(grep '^VERSION_ID=' /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"' || echo unknown)"
+          NIX_VER="$(nix --version 2>/dev/null | awk '{print $NF}' || echo unknown)"
+          KERNEL_VER="$(uname -r)"
+
+          # Header (common)
+          cat > "$OUTPUT_DIR/qualification-results.md" <<QREOF
+          # Qualification Results — $TOOL_GROUP $TOOL_VERSION
+
+          **Run ID:** $QH_RUN_ID
+          **Pass:** generic
+          **Executed:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          **Overall:** $STATUS ($PASSED passed, $FAILURES failed, $SKIPPED skipped)
+
+          ## Environment
+
+          | Field | Value |
+          |-------|-------|
+          | OS | NixOS $OS_VER |
+          | Kernel | $KERNEL_VER |
+          | Nix | $NIX_VER |
+          | Platform | x86_64-linux |
+          | Hostname | $(hostname) |
+          QREOF
+
+          # Simulator section (per-simulator)
+          case "$SIMULATOR" in
+            qrun|modelsim)
+              cat >> "$OUTPUT_DIR/qualification-results.md" <<SIMEOF
+
+          ## Simulator
+
+          | Field | Value |
+          |-------|-------|
+          | Simulator | $SIMULATOR |
+          | Description | $SIM_DISPLAY_NAME |
+          | Container Image | $IMAGE |
+          | Container Image ID | $IMAGE_ID |
+          | Quartus Version | $EXPECTED_QUARTUS_VERSION |
+          | Questa Version | $EXPECTED_QUESTA_VERSION |
+          SIMEOF
+              ;;
+            verilator)
+              cat >> "$OUTPUT_DIR/qualification-results.md" <<SIMEOF
+
+          ## Simulator
+
+          | Field | Value |
+          |-------|-------|
+          | Simulator | $SIMULATOR |
+          | Description | $SIM_DISPLAY_NAME |
+          | Verilator Version | $EXPECTED_VERILATOR_VERSION |
+          | Verilator Store Path | $VERILATOR_STORE_PATH |
+          | Container | None (native execution) |
+          SIMEOF
+              ;;
+          esac
+
+          # SVUnit, Test Summary, Evidence, Raw Output (common)
+          EVIDENCE_LIST="- tests.xml — JUnit XML results from the pytest run.
+          - test-log.txt — full output including version checks and pytest output.
+          - build-info.json — machine-readable qualification metadata.
+          - timing-summary.json — per-test durations for cross-simulator profiling."
+
+          case "$SIMULATOR" in
+            qrun|modelsim)
+              EVIDENCE_LIST="$EVIDENCE_LIST
+          - image-inspect.json — container image metadata."
+              ;;
+          esac
+
+          cat >> "$OUTPUT_DIR/qualification-results.md" <<TAILEOF
+
+          ## SVUnit
+
+          | Field | Value |
+          |-------|-------|
+          | Qualified Version | $QUALIFIED_VERSION |
+          | Commit | $SVUNIT_COMMIT |
+          | Pytest Filter | $PYTEST_FILTER |
+
+          ## Test Summary
+
+          | Metric | Count |
+          |--------|-------|
+          | Total | $TOTAL |
+          | Passed | $PASSED |
+          | Failed | $FAILURES |
+          | Errors | $ERRORS |
+          | Skipped | $SKIPPED |
+
+          ## Evidence
+
+          $EVIDENCE_LIST
+
+          ## Raw Output
+
+          \`\`\`text
+          $(cat "$OUTPUT_DIR/test-log.txt")
+          \`\`\`
+          TAILEOF
+
+          # --- Update latest symlink ---
+          qh_update_latest_symlink "$ARTEFACTS_ROOT" "$QH_RUN_ID"
+
+          echo ""
+          echo "=== Qualification Complete ==="
+          echo "Status:   $STATUS"
+          echo "Results:  $PASSED passed, $FAILURES failed, $ERRORS errors, $SKIPPED skipped (of $TOTAL)"
+          echo "Run ID:   $QH_RUN_ID"
+          echo "Output:   $OUTPUT_DIR"
+
+          if [ "$STATUS" = "FAIL" ]; then
+            exit 1
+          fi
+        '';
+      };
     in
     {
       packages.${system} = {
@@ -187,6 +906,8 @@
         quartus-tools = quartusTools;
         svunit-quartus-podman = svunitQuartusPodman;
         svunit-quartus-check = svunitQuartusCheck;
+        svunit-certify = svunitCertify;
+        svunit-timing-report = svunitTimingReport;
       };
 
       apps.${system} = {
@@ -206,6 +927,14 @@
           type = "app";
           program = "${svunitQuartusCheck}/bin/svunit-quartus-check";
         };
+        svunit-certify = {
+          type = "app";
+          program = "${svunitCertify}/bin/svunit-certify";
+        };
+        svunit-timing-report = {
+          type = "app";
+          program = "${svunitTimingReport}/bin/svunit-timing-report";
+        };
       };
 
       devShells.${system}.default = pkgs.mkShell {
@@ -213,16 +942,22 @@
           quartusTools
           svunitQuartusPodman
           svunitQuartusCheck
+          svunitCertify
+          svunitTimingReport
           pkgs.git
           pkgs.perl
           pkgs.podman
-          pkgs.python3
+          pythonWithPytest
           pkgs.ripgrep
+          verilatorPkg
+          verilatorCc
+          verilatorMake
         ];
 
         shellHook = ''
           export QUARTUS_QUALIFIED_ROOT="${qualifiedQuartusRoot}"
           export QUARTUS_IMAGE_TAG="${imageTag}"
+          export VERILATOR_QUALIFIED_ROOT="${qualifiedVerilatorRoot}"
           if [ -f Setup.bsh ]; then
             source Setup.bsh
           fi

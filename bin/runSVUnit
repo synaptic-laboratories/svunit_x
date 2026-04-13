@@ -79,6 +79,9 @@ sub usage () {
   print "     --list-tests          : lists available tests without actually running them\n";
   print "  -h|--help                : prints this help screen\n";
   print "\n";
+  print "Environment variables (SVUnit X extensions):\n";
+  print "  SVUNIT_VERILATOR_JOBS    : parallelism for Verilator C++ compilation (default: nproc)\n";
+  print "\n";
   exit 1;
 }
 
@@ -180,7 +183,20 @@ if ($simulator eq "modelsim" or $simulator eq "riviera") {
   $cmd .= "$simulator -R -sverilog -l $logfile";
   $cmd .= "-f $vhdlfile " if $vhdlfile;
 } elsif ($simulator eq "verilator") {
-  $cmd .= "verilator --binary --top-module testrunner";
+  # SVUnit X: auto-detect parallelism for Verilator compilation.
+  # Uses all hardware threads by default (via nproc) but at reduced scheduling
+  # priority (nice 10) so compilation doesn't starve interactive processes.
+  # Override with SVUNIT_VERILATOR_JOBS env var.  Set to 1 to disable.
+  my $verilator_jobs;
+  if (defined $ENV{'SVUNIT_VERILATOR_JOBS'}) {
+    $verilator_jobs = int($ENV{'SVUNIT_VERILATOR_JOBS'});
+  } else {
+    my $nproc = `nproc 2>/dev/null` || 1;
+    chomp $nproc;
+    $verilator_jobs = int($nproc);
+    $verilator_jobs = 1 if $verilator_jobs < 1;
+  }
+  $cmd .= "nice -n 10 verilator --binary --top-module testrunner -j $verilator_jobs";
   $cmd .= qq! @compileargs @elabargs!;
 } elsif ($simulator eq "xsim") {
   $cmd .= "xvhdl -f $vhdlfile && " if $vhdlfile;
