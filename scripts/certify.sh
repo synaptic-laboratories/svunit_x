@@ -90,8 +90,9 @@ case "${TARGET_ADAPTER}" in
       echo "ERROR: verilator binary not found on PATH." >&2
       exit 2
     fi
-    if ! verilator --version 2>&1 | grep -qF "${TARGET_EXPECTED_VERILATOR}"; then
-      echo "ERROR: verilator version mismatch — expected ${TARGET_EXPECTED_VERILATOR}, got $(verilator --version 2>&1)" >&2
+    VERILATOR_VERSION_OUT="$(verilator --version 2>&1)"
+    if ! printf '%s\n' "${VERILATOR_VERSION_OUT}" | grep -qF "${TARGET_EXPECTED_VERILATOR}"; then
+      echo "ERROR: verilator version mismatch — expected ${TARGET_EXPECTED_VERILATOR}, got ${VERILATOR_VERSION_OUT}" >&2
       exit 2
     fi
     for bin in gcc make; do
@@ -297,12 +298,19 @@ JQ_COMMON=(
   --argjson exit_code "${EXIT_CODE}"
 )
 
+# Guard: every adapter must write JQ output to TMP_JSON before the mv below,
+# otherwise the good JSON qh_build_info_json just wrote gets clobbered by an
+# empty file.  An unhandled adapter is a programming error — abort, don't
+# silently corrupt artefacts.
 case "${TARGET_ADAPTER}" in
   container)
+    # Sim-only images report "N/A (sim-only)" rather than an empty string
+    # so downstream consumers can distinguish absent-by-design from missing-value.
+    QUARTUS_VERSION_REPORTED="${TARGET_EXPECTED_QUARTUS:-N/A (sim-only)}"
     jq "${JQ_COMMON[@]}" \
       --arg image_tag "${TARGET_IMAGE}" \
       --arg image_id "${IMAGE_ID}" \
-      --arg quartus_version "${TARGET_EXPECTED_QUARTUS}" \
+      --arg quartus_version "${QUARTUS_VERSION_REPORTED}" \
       --arg questa_version "${TARGET_EXPECTED_QUESTA}" \
       '. + {
         target: $target, simulator: $sim, simulator_display: $sim_display,
@@ -329,6 +337,11 @@ case "${TARGET_ADAPTER}" in
         tests_failed: $tests_failed, tests_errors: $tests_errors,
         tests_skipped: $tests_skipped, exit_code: $exit_code
       }' "${OUTPUT_DIR}/build-info.json" > "${TMP_JSON}"
+    ;;
+  *)
+    echo "ERROR: build-info.json JSON stage not implemented for adapter '${TARGET_ADAPTER}'" >&2
+    rm -f "${TMP_JSON}"
+    exit 2
     ;;
 esac
 mv "${TMP_JSON}" "${OUTPUT_DIR}/build-info.json"
@@ -392,6 +405,12 @@ SIMEOF
 | Verilator Store Path | ${TARGET_VERILATOR_STORE_PATH} |
 | Container | None (native execution) |
 SIMEOF
+      ;;
+    *)
+      # Guard: unhandled adapter would leave the markdown without its
+      # Simulator section, breaking the qualification standard's layout.
+      echo "ERROR: qualification-results.md Simulator section not implemented for adapter '${TARGET_ADAPTER}'" >&2
+      exit 2
       ;;
   esac
 

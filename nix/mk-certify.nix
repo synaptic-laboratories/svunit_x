@@ -55,7 +55,7 @@ let
         export QUALIFIED_VERSION=${lib.escapeShellArg qualifiedVersion}
         export ARTEFACTS_ROOT=${lib.escapeShellArg artefactsRoot}
         export CERT_TOOLS_DIR=${lib.escapeShellArg certToolsDir}
-        export TIMING_SUMMARY_SCRIPT=${timingSummaryScript}
+        export TIMING_SUMMARY_SCRIPT=${lib.escapeShellArg timingSummaryScript}
       '';
       containerExports = ''
         export TARGET_IMAGE=${lib.escapeShellArg target.imageTag}
@@ -69,7 +69,7 @@ let
       '';
       nativeExports = ''
         export TARGET_EXPECTED_VERILATOR=${lib.escapeShellArg target.expectedVerilator}
-        export TARGET_VERILATOR_STORE_PATH=${target.verilatorPkg}
+        export TARGET_VERILATOR_STORE_PATH=${lib.escapeShellArg target.verilatorPkg}
       '';
     in
     common + (
