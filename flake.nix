@@ -77,6 +77,26 @@
         ps.pytest
         pytestDatafiles2
       ]);
+
+      # Python helpers used by svunit-certify and svunit-timing-report.
+      # Kept as standalone files under ./scripts/ so editors give syntax
+      # highlighting and pkgs.writers.writePython3 validates them at build
+      # time (vs. previously embedding them in bash heredocs).
+      #
+      # flakeIgnore:
+      #   E265 — writePython3 injects its own shebang, so ours becomes
+      #          an ordinary comment and flake8 complains about spacing.
+      #   E501 — we do not enforce the PEP 8 79-char line limit.
+      pyWriterOpts = {
+        flakeIgnore = [ "E265" "E501" ];
+      };
+      timingSummaryScript = pkgs.writers.writePython3
+        "timing-summary.py" pyWriterOpts
+        (builtins.readFile ./scripts/timing-summary.py);
+      timingReportScript = pkgs.writers.writePython3
+        "timing-report.py" pyWriterOpts
+        (builtins.readFile ./scripts/timing-report.py);
+
       installerRoot = "/srv/share/repo/sll/g_sll_poc/g_2026/ContainerPlayPen/quartus-pro-linux/23.4.0.79/b_individual";
       licenseRoot = "/srv/share/repo/sll/g_sll_poc/g_2026/ContainerPlayPen/launch";
       imageTag = "localhost/quartus-pro-linux:23.4.0.79";
@@ -252,141 +272,11 @@
         name = "svunit-timing-report";
         runtimeInputs = [
           pkgs.coreutils
-          pkgs.jq
-          pythonWithPytest
         ];
         text = ''
           set -euo pipefail
-
           ARTEFACTS_ROOT="''${1:-${svunitArtefactsRoot}}"
-
-          if [ ! -d "$ARTEFACTS_ROOT" ]; then
-            echo "ERROR: Artefacts directory not found: $ARTEFACTS_ROOT" >&2
-            exit 2
-          fi
-
-          # Write the report script to a temp file to avoid Nix string escaping
-          # issues with Python's single/double quotes
-          REPORT_SCRIPT="$(mktemp --suffix=.py)"
-          trap 'rm -f "$REPORT_SCRIPT"' EXIT
-          cat > "$REPORT_SCRIPT" << 'PYEOF'
-          import json, os, sys
-          from pathlib import Path
-          from collections import defaultdict
-
-          root = Path(sys.argv[1])
-
-          # Collect all timing-summary.json files
-          summaries = []
-          for p in sorted(root.glob("*/timing-summary.json")):
-              try:
-                  with open(p) as f:
-                      data = json.load(f)
-                  data["_path"] = str(p.parent.name)
-                  summaries.append(data)
-              except (json.JSONDecodeError, KeyError):
-                  continue
-
-          if not summaries:
-              print("No timing-summary.json files found in", root)
-              sys.exit(0)
-
-          # Group by hostname, pick latest run_id per (hostname, simulator)
-          latest = {}
-          for s in summaries:
-              key = (s.get("hostname", "unknown"), s.get("simulator", "unknown"))
-              existing = latest.get(key)
-              if existing is None or s.get("run_id", "") > existing.get("run_id", ""):
-                  latest[key] = s
-
-          # Group by hostname for reporting
-          by_host = defaultdict(dict)
-          for (host, sim), data in sorted(latest.items()):
-              by_host[host][sim] = data
-
-          for host, sims in sorted(by_host.items()):
-              print(f"# Timing Report \u2014 {host}")
-              print()
-
-              # Summary table
-              print("| Simulator | Run ID | Wall Time | Tests | Passed | Skipped |")
-              print("|-----------|--------|-----------|-------|--------|---------|")
-              for sim_name, data in sorted(sims.items()):
-                  wt = data.get("wall_time_s", 0)
-                  mm, ss = divmod(wt, 60)
-                  wall_str = f"{int(mm)}m{ss:.1f}s" if mm else f"{wt:.1f}s"
-                  total = data.get("tests_total", 0)
-                  passed = sum(1 for t in data.get("tests", []) if t["status"] == "PASSED")
-                  skipped = sum(1 for t in data.get("tests", []) if t["status"] == "SKIPPED")
-                  run_id = data.get("run_id", "?")
-                  print(f"| {sim_name} | {run_id} | {wall_str} | {total} | {passed} | {skipped} |")
-              print()
-
-              # Per-test comparison if multiple simulators
-              sim_names = sorted(sims.keys())
-              if len(sim_names) >= 2:
-                  joiner = " vs "
-                  print(f"## Per-test comparison ({joiner.join(sim_names)})")
-                  print()
-
-                  # Build lookup: base_name -> {sim: duration}
-                  test_data = defaultdict(dict)
-                  for sim_name, data in sims.items():
-                      for t in data.get("tests", []):
-                          base = t.get("base_name", t["name"])
-                          test_data[base][sim_name] = t
-
-                  # Header
-                  cols = " | ".join(f"{s} (s)" for s in sim_names)
-                  header = f"| Test | {cols} | Ratio |"
-                  sep = "|" + "|".join(["---"] * (len(sim_names) + 2)) + "|"
-                  print(header)
-                  print(sep)
-
-                  # Rows sorted by first simulator's time descending
-                  rows = []
-                  for base, by_sim in test_data.items():
-                      vals = []
-                      for s in sim_names:
-                          if s in by_sim and by_sim[s]["status"] == "PASSED":
-                              vals.append(by_sim[s]["duration_s"])
-                          else:
-                              vals.append(None)
-                      rows.append((base, vals))
-
-                  rows.sort(key=lambda r: -(r[1][0] or 0))
-
-                  for base, vals in rows:
-                      val_strs = []
-                      for v in vals:
-                          val_strs.append(f"{v:.3f}" if v is not None else "N/A")
-                      # ratio: last/first if both present
-                      if len(vals) >= 2 and vals[0] and vals[-1] and vals[0] > 0:
-                          ratio = f"{vals[-1] / vals[0]:.1f}x"
-                      else:
-                          ratio = "N/A"
-                      col_str = " | ".join(val_strs)
-                      print(f"| {base} | {col_str} | {ratio} |")
-
-                  print()
-                  # Aggregate stats
-                  for i, s in enumerate(sim_names):
-                      durations = [r[1][i] for r in rows if r[1][i] is not None]
-                      if durations:
-                          avg = sum(durations) / len(durations)
-                          total_d = sum(durations)
-                          print(f"**{s}**: {len(durations)} tests, total {total_d:.1f}s, avg {avg:.2f}s/test")
-                  # Overall ratio
-                  common = [(r[1][0], r[1][-1]) for r in rows
-                            if r[1][0] is not None and r[1][-1] is not None
-                            and r[1][0] > 0]
-                  if common:
-                      ratios = [b / a for a, b in common]
-                      avg_ratio = sum(ratios) / len(ratios)
-                      print(f"**Mean ratio** ({sim_names[-1]}/{sim_names[0]}): {avg_ratio:.2f}x across {len(common)} common tests")
-              print()
-          PYEOF
-          python3 "$REPORT_SCRIPT" "$ARTEFACTS_ROOT"
+          exec ${timingReportScript} "$ARTEFACTS_ROOT"
         '';
       };
 
@@ -689,44 +579,8 @@
 
           # --- timing-summary.json from JUnit XML ---
           if [ -f "$OUTPUT_DIR/tests.xml" ]; then
-            TIMING_SCRIPT="$(mktemp --suffix=.py)"
-            cat > "$TIMING_SCRIPT" << 'TIMING_PYEOF'
-          import xml.etree.ElementTree as ET, json, sys
-          tree = ET.parse(sys.argv[1])
-          root = tree.getroot()
-          wall = float(root.find(".//testsuite").get("time", root.get("time", "0")))
-          tests = []
-          for tc in root.iter("testcase"):
-              name = tc.get("name", "")
-              classname = tc.get("classname", "")
-              t = float(tc.get("time", "0"))
-              if tc.find("skipped") is not None:
-                  status = "SKIPPED"
-              elif tc.find("failure") is not None:
-                  status = "FAILED"
-              elif tc.find("error") is not None:
-                  status = "ERROR"
-              else:
-                  status = "PASSED"
-              # normalise name: strip [simulator] suffix for cross-sim comparison
-              base = name.rsplit("[", 1)[0] if "[" in name else name
-              tests.append({"name": name, "base_name": base, "classname": classname,
-                            "duration_s": round(t, 3), "status": status})
-          tests.sort(key=lambda x: -x["duration_s"])
-          doc = {
-              "simulator": sys.argv[2],
-              "hostname": sys.argv[3],
-              "run_id": sys.argv[4],
-              "wall_time_s": round(wall, 3),
-              "tests_total": len(tests),
-              "tests": tests
-          }
-          with open(sys.argv[5], "w") as f:
-              json.dump(doc, f, indent=2)
-          TIMING_PYEOF
-            python3 "$TIMING_SCRIPT" "$OUTPUT_DIR/tests.xml" "$SIMULATOR" "$(hostname)" "$QH_RUN_ID" \
-              "$OUTPUT_DIR/timing-summary.json"
-            rm -f "$TIMING_SCRIPT"
+            ${timingSummaryScript} "$OUTPUT_DIR/tests.xml" "$SIMULATOR" "$(hostname)" \
+              "$QH_RUN_ID" "$OUTPUT_DIR/timing-summary.json"
             echo "Wrote timing-summary.json ($(jq '.tests | length' "$OUTPUT_DIR/timing-summary.json") tests)"
           fi
 
