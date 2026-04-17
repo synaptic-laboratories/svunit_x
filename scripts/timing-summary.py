@@ -44,7 +44,11 @@ def main(argv: list[str]) -> int:
     tree = ET.parse(xml_path)
     root = tree.getroot()
     testsuite = root.find(".//testsuite")
-    wall = float((testsuite or root).get("time", "0"))
+    # `testsuite or root` is a DeprecationWarning in Python 3.12+ — the truth
+    # value of an Element with no children is False, which shadows the
+    # element-not-found case.  Compare against None explicitly.
+    wall_src = testsuite if testsuite is not None else root
+    wall = float(wall_src.get("time", "0"))
 
     tests = []
     for tc in root.iter("testcase"):
