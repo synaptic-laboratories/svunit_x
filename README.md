@@ -95,25 +95,40 @@ runSVUnit -s <simulator> # simulator is ius, questa, modelsim, riviera, vcs, dsi
 
 ## Qualification
 
-Run the full SVUnit qualification against a simulator:
+Each qualification *target* is one concrete `(simulator, version, variant)`
+combination and has its own Nix package.  Run one:
 
 ```shell
-nix run .#svunit-certify -- --simulator qrun
-nix run .#svunit-certify -- --simulator verilator
+nix run .#svunit-certify-quartus-23-4-qrun
+nix run .#svunit-certify-quartus-25-1-sim-only-qrun
+nix run .#svunit-certify-verilator-5-044
+```
+
+Or run every registered target sequentially and get a cross-target timing
+report at the end:
+
+```shell
+nix run .#svunit-certify-all
 ```
 
 Artefacts are written to `g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/`
 with run folders named per the SLL qualification standard
 (`YYYYMMDD-HHMM--nixos-<ver>--nix-<ver>--kernel-<ver>`).
 
-Supported simulators:
+Supported targets (registered in `nix/registry.nix`):
 
-| Simulator | Status | Runtime |
-|-----------|--------|---------|
-| `qrun` | Qualified | Quartus Pro 23.4.0.79 / Questa FPGA Edition 2023.3 (container) |
-| `modelsim` | Qualified | Quartus Pro 23.4.0.79 / Questa FPGA Edition 2023.3 (container) |
-| `verilator` | Qualified | Verilator 5.044 (native, from `g_verilator/r_v5_044`) |
-| `xsim` | Planned | Vivado (not yet implemented) |
+| Target | Status | Runtime |
+|--------|--------|---------|
+| `quartus-23-4-qrun` | Qualified | Quartus Pro 23.4.0.79 / Questa FPGA Edition 2023.3 (container) |
+| `quartus-23-4-modelsim` | Qualified | Quartus Pro 23.4.0.79 / Questa FPGA Edition 2023.3 (container) |
+| `quartus-25-1-sim-only-qrun` | Qualified | Quartus Pro 25.1.1.125 *sim-only* image / Questa FPGA Edition 2025.1 (container) |
+| `quartus-25-1-sim-only-modelsim` | Qualified | Quartus Pro 25.1.1.125 *sim-only* image / Questa FPGA Edition 2025.1 (container) |
+| `verilator-5-044` | Qualified | Verilator 5.044 (native, from `g_verilator/r_v5_044`) |
+| `vivado-*-xsim` | Planned | Vivado 2025.2.1 via `buildFHSEnv` (adapter stub present, not wired) |
+
+To add a Quartus version: append an attribute to `nix/registry.nix`, add
+the matching flake input, and `nix flake lock`.  The per-target packages
+and apps are generated automatically.
 
 ### Verilator parallel compilation
 
@@ -152,56 +167,58 @@ markdown table with per-test durations, ratios, and aggregate statistics.
 
 ### Dependency architecture
 
-The `svunit-certify` command bundles all simulator runtimes into a single Nix
-closure.  This avoids duplicating shared logic (argument parsing, artefact
-generation, JUnit XML parsing) across per-simulator packages.
+Targets are declared once in `nix/registry.nix` and consumed by factory
+modules (`nix/mk-certify.nix`, `nix/mk-quartus-shell.nix`) to generate
+per-target packages.  Three adapter shapes are supported:
 
-| Simulator | Execution model | Host deps used? |
-|-----------|----------------|-----------------|
-| `qrun` / `modelsim` | Inside Podman container | No -- container has isolated filesystem with its own python3; host-side Verilator/pytest deps are on PATH but invisible to the container |
-| `verilator` | Native on host | Yes -- uses Verilator, gcc, make, and python3-with-pytest from the Nix closure |
-| `xsim` (planned) | Inside Podman container | Will follow the container pattern |
+| Adapter | Used by | Execution model | Host deps used? |
+|---------|---------|-----------------|-----------------|
+| `container` | `quartus-*-qrun`, `quartus-*-modelsim` | Inside Podman container | No — container has its own python3; host-side deps are not visible inside the container |
+| `native` | `verilator-*` | Native on host | Yes — Verilator, gcc, make, and python3-with-pytest from the Nix closure |
+| `fhs` | `vivado-*-xsim` (planned) | Native with `buildFHSEnv` wrappers | Yes — tools wrapped per `g_xilinx_vivado/r_src_v2025_1` |
 
 The Verilator flake (`g_verilator/r_v5_044`) uses `nixos-unstable` internally;
-this flake does **not** follow its nixpkgs -- we consume only its binaries.
+this flake does **not** follow its nixpkgs — we consume only its binaries.
 Test runner dependencies (pytest, pytest-datafiles) are bundled via
 `python3.withPackages` in the SVUnit flake, not in the Verilator flake, because
 they are SVUnit's concern, not Verilator's.
 
 ## Quartus Podman workflow
 
-This repo includes a `flake.nix` that consumes the qualified Altera Quartus Pro Podman source at `g_altera_quartus_pro_podman/r_src_v23_4_0_79` and exposes repo-local wrappers.
+Each Quartus container *base* (e.g. 23.4.0.79 Pro, 25.1.1.125 sim-only) has
+its own interactive-shell launcher and its own `quartus-tools` wrapper,
+generated from the registry.
 
-Build or refresh the local container image:
-
-```shell
-nix run .#quartus-tools -- build-image
-```
-
-Check that the container exposes the expected Quartus and Questa commands:
+Build or refresh the container image for a given base:
 
 ```shell
-nix run .#svunit-quartus-check
+nix run .#svunit-quartus-tools-quartus-23-4 -- build-image
+nix run .#svunit-quartus-tools-quartus-25-1-sim-only -- build-image
 ```
 
 Open a shell inside the Quartus container with this repo mounted at `/sll`:
 
 ```shell
-nix run .#svunit-quartus-podman
+nix run .#svunit-quartus-shell-quartus-23-4
+nix run .#svunit-quartus-shell-quartus-25-1-sim-only
 ```
 
-Launch the Quartus GUI when `DISPLAY` is available:
+Launch the Quartus GUI when `DISPLAY` is available (only valid for bases
+that include Quartus, i.e. not sim-only):
 
 ```shell
-nix run .#svunit-quartus-podman -- --quartus
+nix run .#svunit-quartus-shell-quartus-23-4 -- --quartus
 ```
 
-By default the wrapper:
+By default each shell wrapper:
 
-- uses `localhost/quartus-pro-linux:23.4.0.79`
+- uses the base's default image tag (e.g. `localhost/quartus-pro-linux:23.4.0.79` or
+  `localhost/quartus-pro-linux:25.1.1.125-sim-only`)
 - mounts the repo root into the container at `/sll`
 - persists container root state under `.quartus/root`
-- looks for `quartus_license.dat` and `questa_license.dat` in `/srv/share/repo/sll/g_sll_poc/g_2026/ContainerPlayPen/launch`
+- looks for `quartus_license.dat` and `questa_license.dat` in
+  `/srv/share/repo/sll/g_sll_poc/g_2026/ContainerPlayPen/launch`
+  (one license set covers all Quartus/Questa versions)
 
 
 ## Feedback
