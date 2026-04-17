@@ -50,14 +50,14 @@
         "type": "github"
       }
     },
-    "quartus-podman": {
+    "quartus-podman-23-4": {
       "inputs": {
         "nixpkgs": "nixpkgs"
       },
       "locked": {
         "lastModified": 1775997712,
         "narHash": "sha256-Ywfp61tHVyIajZZsry1pvETxbllBdXHZyY0sLbsQe6I=",
-        "ref": "master",
+        "ref": "refs/heads/master",
         "rev": "448d988f1c0bd19f4f53caa53d1d37c437d3621c",
         "revCount": 2,
         "type": "git",
@@ -68,13 +68,34 @@
         "url": "ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79"
       }
     },
+    "quartus-podman-25-1": {
+      "inputs": {
+        "nixpkgs": [
+          "quartus-podman-23-4",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "dirtyRev": "92d1cc17299402dab9e37251f4a1da5f333167fb-dirty",
+        "dirtyShortRev": "92d1cc1-dirty",
+        "lastModified": 1776439419,
+        "narHash": "sha256-8F3IJgtQm24+ypilWoBhf2wiXLMbG5iozklapg80/V4=",
+        "type": "git",
+        "url": "file:///srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v25_1_1_125"
+      },
+      "original": {
+        "type": "git",
+        "url": "file:///srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v25_1_1_125"
+      }
+    },
     "root": {
       "inputs": {
         "nixpkgs": [
-          "quartus-podman",
+          "quartus-podman-23-4",
           "nixpkgs"
         ],
-        "quartus-podman": "quartus-podman",
+        "quartus-podman-23-4": "quartus-podman-23-4",
+        "quartus-podman-25-1": "quartus-podman-25-1",
         "verilator-certified": "verilator-certified"
       }
     },

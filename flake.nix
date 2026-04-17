@@ -26,18 +26,25 @@
   # ---------------------------------------------------------------------------
 
   inputs = {
-    quartus-podman = {
+    quartus-podman-23-4 = {
       url = "git+ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79";
+    };
+    quartus-podman-25-1 = {
+      # TODO: switch to git+ssh://prv.git.i01.synaptic-labs.com/... once the
+      # altera 25.1.1.125 Podman repo is pushed there.  Using git+file:// for
+      # now because the repo at this path is still under development.
+      url = "git+file:///srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v25_1_1_125";
+      inputs.nixpkgs.follows = "quartus-podman-23-4/nixpkgs";
     };
     verilator-certified = {
       # Provides verilator 5.044 binary + cc + make.  Uses nixos-unstable
       # internally; we do NOT follow its nixpkgs — we only consume binaries.
       url = "git+ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044";
     };
-    nixpkgs.follows = "quartus-podman/nixpkgs";
+    nixpkgs.follows = "quartus-podman-23-4/nixpkgs";
   };
 
-  outputs = { nixpkgs, quartus-podman, verilator-certified, ... }:
+  outputs = { nixpkgs, quartus-podman-23-4, quartus-podman-25-1, verilator-certified, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -86,7 +93,7 @@
         + "${quartusInstallRoot}/nios2eds/sdk2/bin:"
         + "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
 
-      rawQuartusTools = quartus-podman.packages.${system}.quartus-tools;
+      rawQuartusTools = quartus-podman-23-4.packages.${system}.quartus-tools;
 
       quartusTools = pkgs.writeShellApplication {
         name = "svunit-quartus-tools";
