@@ -150,21 +150,21 @@ case "${TARGET_ADAPTER}" in
     container_script="$(cat <<'CONTAINER_EOF'
 set -euo pipefail
 
-# --- Bootstrap Perl core modules (File::Find, etc) ---
+# --- Bootstrap full Perl runtime (File::Find, IO::Dir, etc) ---
 # Some sim-only container variants (e.g. quartus-pro-linux:25.1.1.125-sim-only)
-# ship with `perl-base` only, which lacks core modules like File::Find that
-# bin/runSVUnit requires. If File::Find is missing we install `perl-modules-<ver>`
-# via apt. This is idempotent and no-ops on images that already have it
-# (e.g. quartus-pro-linux:23.4.0.79 which ships with `perl` full).
-if ! perl -MFile::Find -e 1 >/dev/null 2>&1; then
-  echo "--- bootstrap: installing perl-modules (File::Find missing) ---"
+# ship with `perl-base` only, which lacks core modules like File::Find (via
+# perl-modules-*) and IO::Dir (via libperl5.38t64) that bin/runSVUnit and
+# bin/buildSVUnit require. Installing the `perl` metapackage pulls in both.
+# Idempotent — no-ops on images that already have perl full (e.g.
+# quartus-pro-linux:23.4.0.79).
+if ! perl -MFile::Find -MIO::Dir -e 1 >/dev/null 2>&1; then
+  echo "--- bootstrap: installing perl metapackage (missing core/IO modules) ---"
   apt-get update -q >/dev/null 2>&1
-  perl_ver="$(perl -e 'printf "%d.%d", $^V->{version}[0], $^V->{version}[1]' 2>/dev/null || echo 5.38)"
-  apt-get install -y -q --no-install-recommends "perl-modules-${perl_ver}" >/dev/null 2>&1 || \
-    apt-get install -y -q --no-install-recommends perl-modules >/dev/null 2>&1 || \
-    { echo "FAIL: could not install perl-modules-${perl_ver}" >&2; exit 2; }
-  perl -MFile::Find -e 1 || { echo "FAIL: File::Find still unavailable after apt install" >&2; exit 2; }
-  echo "OK: perl-modules-${perl_ver} installed"
+  apt-get install -y -q --no-install-recommends perl >/dev/null 2>&1 \
+    || { echo "FAIL: could not install perl metapackage" >&2; exit 2; }
+  perl -MFile::Find -MIO::Dir -e 1 \
+    || { echo "FAIL: File::Find / IO::Dir still unavailable after apt install" >&2; exit 2; }
+  echo "OK: perl metapackage installed (File::Find, IO::Dir, etc available)"
 fi
 
 # --- Bootstrap pytest ---
