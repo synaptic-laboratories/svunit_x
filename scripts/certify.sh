@@ -224,10 +224,18 @@ python3 -m pytest -v -k "${PYTEST_FILTER}" \
 CONTAINER_EOF
     )"
 
+    # Licensing env vars: Questa 2025.1 moved from LM_LICENSE_FILE (colon-delim)
+    # to SALT_LICENSE_SERVER (semicolon-delim, SALT v2.4.2.0). Older Questa
+    # (2023.3 in the 23.4 image) still reads LM_LICENSE_FILE, and quartus_sh
+    # on the full 23.4 image also uses LM_LICENSE_FILE. Set both so a single
+    # certify.sh path works across container versions — each tool picks the
+    # var it understands and ignores the other. Single license file per var,
+    # so the delimiter difference doesn't matter (no separator needed).
     "${CONTAINER_RUNTIME}" run --rm \
       --net=host \
       --cap-add=NET_ADMIN \
       -e LM_LICENSE_FILE=/opt/quartus_license.dat:/opt/questa_license.dat \
+      -e SALT_LICENSE_SERVER=/opt/questa_license.dat \
       -e QUARTUS_PATH="${TARGET_INSTALL_ROOT}" \
       -e QUARTUS_ROOTDIR="${TARGET_INSTALL_ROOT}/quartus" \
       -e SOPC_KIT_NIOS2="${TARGET_INSTALL_ROOT}/nios2eds" \
