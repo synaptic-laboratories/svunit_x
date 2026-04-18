@@ -30,9 +30,10 @@ Bring upstream SVUnit changes into this fork without regressing the fork's Xilin
 
 ### Out of Scope
 
-- Creating the future Xilinx flake — deferred because this stage signs off on Quartus, not Xilinx-flake bring-up
-- Large new simulator features unrelated to upstream catch-up — this stage is about sync and preservation, not broad feature expansion
+- Large new simulator features unrelated to upstream catch-up — this stage is about sync, preservation, and sign-off, not broad feature expansion
 - Blind rebasing or conflict resolution by text-only merge rules — rejected because local fork intent must be preserved where it still matters
+
+_Note: "Creating the future Xilinx flake" was out of scope as of 2026-04-11. On 2026-04-18, after Phase 3 sign-off confirmed the certify tooling surface could absorb a Vivado-xsim target, Xilinx Vivado xsim Integration was promoted to active scope as Phase 4 (XFLK-01, XFLK-02). Maintainer Documentation & Handoff renumbered to Phase 5._
 
 ## Context
 
@@ -51,7 +52,7 @@ Phase 3 closed the sign-off gate. All 5 registered certify targets (Quartus 23.4
 ## Constraints
 
 - **Compatibility**: Preserve validated Xilinx/Vivado-specific behavior in the fork — that local value is the reason the fork exists
-- **Verification**: Quartus is the sign-off environment for this stage — the Xilinx flake is not ready yet
+- **Verification**: Quartus is the primary sign-off environment for this stage; Xilinx Vivado xsim was promoted to active scope on 2026-04-18 as a sixth sign-off target (Phase 4)
 - **Workflow**: Sync decisions must be informed by git history and documented intent — text-only merging is insufficient for this repo
 - **Scope**: This stage is an upstream catch-up, not a broad redesign of SVUnit internals — keep divergence minimal unless local behavior requires it
 - **Review**: Complex merge outcomes may require human checking — do not force unclear resolutions just to keep momentum
@@ -69,6 +70,8 @@ Phase 3 closed the sign-off gate. All 5 registered certify targets (Quartus 23.4
 | Phase 3 sign-off requires all 5 registered certify targets PASS (D-01) | The project's verification contract names the current registered target set as the required coverage — fewer targets weakens the contract, more targets re-opens discussion | ✓ Good |
 | Phase 3 uses unique per-target `--output-dir` rather than `svunit-certify-all` shared-root snapshot | Review-pass feedback (Codex+OpenCode) flagged `comm -13 BEFORE AFTER` as racy with concurrent writers; explicit per-target paths eliminate the collision class | ✓ Good |
 | Phase 3 introduced `SALT_LICENSE_SERVER` alongside `LM_LICENSE_FILE` for Questa | Questa 2025.1 migrated to SALT licensing; older 2023.3 still reads LM. Setting both lets one container run cleanly with either Questa version — each ignores the variable it doesn't recognize | ✓ Good |
+| Promote Xilinx Vivado xsim integration from v2 deferred to Phase 4 in current milestone (2026-04-18) | Phase 3 sign-off demonstrated the certify tooling surface (`scripts/certify.sh` adapter dispatch, `nix/registry.nix`, `nix/mk-certify.nix`) is cleanly extensible. Deferring another milestone would mean the Maintainer Documentation phase ships referencing Xilinx as future work, then needs re-opening when Xilinx lands — churning the handoff | — Pending |
+| Insert Xilinx as whole-number Phase 4 (not decimal 3.1) and renumber Maintainer Docs to Phase 5 | Decimal numbering signals "urgent polish of prior phase"; Xilinx bring-up is a substantial new capability and belongs between sign-off and docs as a first-class phase so the docs phase describes the final post-Xilinx state | — Pending |
 
 ## Evolution
 
@@ -88,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-18 after Phase 3 completion*
+*Last updated: 2026-04-18 after Phase 3 completion + Xilinx-integration scope amendment (Phase 4 inserted, Maintainer Docs renumbered to Phase 5)*

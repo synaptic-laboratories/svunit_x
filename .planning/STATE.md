@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.38.1
 milestone_name: milestone
-status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-04-18T13:25:35.915Z"
+status: idle
+stopped_at: ""
+last_updated: "2026-04-18T17:56:00.000Z"
 last_activity: 2026-04-18
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 3
   total_plans: 8
-  completed_plans: 10
-  percent: 100
+  completed_plans: 8
+  percent: 60
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-04-12)
 
-**Core value:** Bring upstream SVUnit changes into this fork without regressing the fork's Xilinx/Vivado-specific behavior, using Quartus-based verification as the sign-off gate for this stage.
-**Current focus:** Phase 3 — Quartus Verification & Sign-Off
+**Core value:** Bring upstream SVUnit changes into this fork without regressing the fork's Xilinx/Vivado-specific behavior, using Quartus-based verification (and, as of 2026-04-18, Xilinx Vivado xsim) as the sign-off gate for this stage.
+**Current focus:** Phase 4 — Xilinx Vivado xsim Integration (inserted 2026-04-18)
 
 ## Current Position
 
 Phase: 4
 Plan: Not started
-Status: Executing Phase 3
+Status: Idle — Phase 3 complete; Phase 4 awaiting discuss/plan
 Last activity: 2026-04-18
 
 Progress: [█████░░░░░] 50%
@@ -82,6 +82,12 @@ Recent decisions affecting current work:
 - [Phase 02]: Treat test/utils.py as a justified replacement rather than pretending the original fork hunk was valid Python.
 - [Phase 02]: Keep unresolved ancestry wording and xsim/parser-sensitive residuals as explicit Phase 3 inputs instead of forcing them closed during Phase 2.
 - [Phase 02]: Use the integrated summary plus human-review handoff as the Quartus sign-off entry point, not the raw merge diff.
+- Phase 3 (2026-04-18): All 5 registered certify targets PASS; sign-off green; Questa 2025.1 SALT licensing fix landed as `292a8a0`.
+- Roadmap amendment (2026-04-18): Phase 4 inserted as **Xilinx Vivado xsim Integration** (whole-number renumbering). XFLK-01/XFLK-02 promoted from v2 deferred to v1 active. Maintainer Documentation & Handoff renumbered Phase 4 → Phase 5. Rationale: Phase 3 confirmed the certify tooling surface is ready to absorb a Vivado-xsim target, and the docs phase should describe the final post-Xilinx state rather than retroactively revising.
+
+### Roadmap Evolution
+
+- 2026-04-18: Phase 4 (Xilinx Vivado xsim Integration) inserted after Phase 3 via whole-number renumbering. Phase 5 is the former Phase 4 (Maintainer Documentation & Handoff) renumbered, depends_on updated to Phase 4.
 
 ### Pending Todos
 
@@ -94,6 +100,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-17T16:45:20.644Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-quartus-verification-sign-off/03-CONTEXT.md
+Last session: 2026-04-18
+Stopped at: Phase 3 complete; Phase 4 ready to begin
+Resume file: (none — run /gsd-discuss-phase 4 to start Phase 4)

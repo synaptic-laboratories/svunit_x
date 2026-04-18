@@ -27,13 +27,18 @@ Requirements for the current upstream catch-up stage. Each maps to one roadmap p
 
 ### Verification
 
-- [ ] **VERI-01**: Maintainer can run the required regression flow on this machine through the certified Quartus flake for this stage
-- [ ] **VERI-02**: Quartus-based sign-off demonstrates that the synchronized fork passes the required regression suite for this stage
-- [ ] **VERI-03**: Verification output records what was run, under which simulator/tooling path, and any remaining coverage gaps
+- [x] **VERI-01**: Maintainer can run the required regression flow on this machine through the certified Quartus flake for this stage
+- [x] **VERI-02**: Quartus-based sign-off demonstrates that the synchronized fork passes the required regression suite for this stage
+- [x] **VERI-03**: Verification output records what was run, under which simulator/tooling path, and any remaining coverage gaps
+
+### Xilinx Vivado xsim Integration (promoted from v2 on 2026-04-18)
+
+- [ ] **XFLK-01**: Maintainer can run equivalent sign-off verification through a certified Xilinx Vivado xsim flake as a sixth sign-off target alongside the five Quartus/Verilator targets
+- [ ] **XFLK-02**: The `fhs` adapter in `scripts/certify.sh` is implemented (no longer a stub) and handles the `buildFHSEnv`-based Vivado flake invocation path; pass criteria are defined for xsim and surfaced in the consolidated sign-off manifest
 
 ### Documentation
 
-- [ ] **DOCS-01**: Repo documentation states that Quartus is the sign-off environment for this stage and that the Xilinx flake remains future work
+- [ ] **DOCS-01**: Repo documentation states which sign-off environments cover this stage (Quartus targets + Xilinx Vivado xsim) and identifies remaining verification dimensions that are future work
 - [ ] **DOCS-02**: Repo documentation points maintainers to the fork-delta intent record and the chosen upstream-sync method
 
 ## v2 Requirements
@@ -42,7 +47,6 @@ Deferred to later maintenance rounds.
 
 ### Future Tooling
 
-- **XFLK-01**: Maintainer can run equivalent sign-off verification through a certified Xilinx flake once that environment is ready
 - **SYNC-OPS-01**: Maintainer has a repeatable workflow for future upstream catch-up releases beyond this one
 
 ## Out of Scope
@@ -51,9 +55,10 @@ Explicitly excluded for this stage.
 
 | Feature | Reason |
 |---------|--------|
-| Build the Xilinx flake now | The user stated it is still in progress and Quartus is the sign-off environment for this stage |
-| Add broad new simulator capabilities unrelated to upstream catch-up | This stage is about synchronization and preservation, not feature expansion |
+| Add broad new simulator capabilities unrelated to upstream catch-up | This stage is about synchronization, preservation, and sign-off; not feature expansion |
 | Resolve complex conflicts without preserving intent records | The user expects history-aware and reviewable reconciliation, not blind text merges |
+
+_Note: "Build the Xilinx flake now" was in this table as of 2026-04-11. It was promoted to active scope on 2026-04-18 as XFLK-01/XFLK-02 once Phase 3 sign-off confirmed the certify tooling surface could absorb a Vivado-xsim target._
 
 ## Traceability
 
@@ -70,17 +75,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SYNC-01 | Phase 2 | Complete |
 | SYNC-02 | Phase 2 | Complete |
 | SYNC-03 | Phase 2 | Complete |
-| VERI-01 | Phase 3 | Pending |
-| VERI-02 | Phase 3 | Pending |
-| VERI-03 | Phase 3 | Pending |
-| DOCS-01 | Phase 4 | Pending |
-| DOCS-02 | Phase 4 | Pending |
+| VERI-01 | Phase 3 | Complete |
+| VERI-02 | Phase 3 | Complete |
+| VERI-03 | Phase 3 | Complete |
+| XFLK-01 | Phase 4 | Pending |
+| XFLK-02 | Phase 4 | Pending |
+| DOCS-01 | Phase 5 | Pending |
+| DOCS-02 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 14 total
-- Mapped to phases: 14
+- v1 requirements: 16 total (was 14; XFLK-01/XFLK-02 promoted from v2 on 2026-04-18)
+- Mapped to phases: 16
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-11*
-*Last updated: 2026-04-11 after roadmap creation*
+*Last updated: 2026-04-18 after Phase 3 completion + Xilinx-integration scope amendment (Phase 4 inserted, Maintainer Docs renumbered to Phase 5)*
