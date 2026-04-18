@@ -1,6 +1,7 @@
 # Phase 3: Quartus Verification & Sign-Off - Context
 
 **Gathered:** 2026-04-17
+**Amended:** 2026-04-18 (D-07, D-08, D-09 — lessons-capture scope expansion)
 **Status:** Ready for planning
 
 <domain>
@@ -38,7 +39,16 @@ This phase does NOT: build the Xilinx flake, run xsim-based verification, exerci
 ### Phase 3 plan layout
 - **D-06:** The phase decomposes into exactly two plans, matching the ROADMAP's `Plans: 2`:
   - **Plan 1 — Xilinx-thematics audit.** Folds the pending todo `.planning/todos/pending/2026-04-12-audit-imported-changes-for-xilinx-thematics.md`. Deliverable: an audit report identifying which upstream-imported changes (from Phase 2) need follow-up against fork Xilinx themes (parser-safe queue typing `[$]`, explicit declarations/signatures, warning reduction). Findings feed the sign-off doc's gap matrix; code fixes for flagged items are NOT in Phase 3 scope — they surface as follow-up phases or maintainer-review items.
-  - **Plan 2 — Sign-off run + consolidated sign-off doc.** Execute `svunit-certify-all`, verify every target lands STATUS=PASS, produce `03-sign-off.md` citing the run-ids, the pass matrix, the gap matrix (D-05), and the carried-forward residuals (D-03).
+  - **Plan 2 — Sign-off run + consolidated sign-off doc + reproducibility + lessons seed.** Execute `svunit-certify-all`, verify every target lands STATUS=PASS, produce `03-sign-off.md` citing the run-ids, the pass matrix, the gap matrix (D-05), the carried-forward residuals (D-03), the "Next Sign-Off Round" forward-looking section (D-08), the reproducibility script (D-07), and seed the cross-phase lessons-learned file (D-09).
+
+### Reproducibility (escalated 2026-04-18)
+- **D-07:** A reproducibility script lives at `.planning/phases/03-quartus-verification-sign-off/03-reproduce.sh` as a Plan 2 deliverable (required, not optional). Contract: a maintainer re-running sign-off on a future revision executes this script; it drives `svunit-certify-all`, captures the 5 per-target run-ids, and writes them to a predictable location the sign-off doc can template-fill on re-run. The script is the *executable* companion to the prose sign-off doc — the doc explains what, the script enacts it. Non-goals: the script does not author or commit the sign-off doc; that stays a human-in-the-loop step so gap-matrix and residuals sections can be re-judged against the new run.
+
+### Forward-looking sign-off section (added 2026-04-18)
+- **D-08:** `03-sign-off.md` MUST include a `## Next Sign-Off Round` section. Scope: what a future maintainer needs to reconsider when re-signing — specifically (a) flake pins that may drift (`flake.lock` revs, Quartus-container tags, Verilator `5-044` version), (b) artefacts-root assumptions (path, permissions, retention), (c) licensing gates (UVM `svverification` license availability — if it becomes available, the `not uvm_simple_model` filter should be dropped), (d) XFLK-01 readiness (Xilinx/xsim sign-off becoming unblocked), (e) Phase 1/2 residuals that may have closed out and no longer need carry-forward. This section is forward-looking only — it does NOT duplicate the gap matrix (D-05), which describes the current sign-off's coverage state.
+
+### Cross-phase lessons-learned (added 2026-04-18)
+- **D-09:** Plan 2 creates `.planning/LESSONS-LEARNED.md` at the project level (not phase-scoped) and seeds it with Phase 3 content. Structure: one section per phase, reverse-chronological. Each phase section captures **only** non-obvious, reusable lessons — not a recap of decisions (CONTEXT.md already does that). Phase 3 seed entries MUST include at minimum: the run-id minute-granularity collision risk (RESEARCH.md §2), the Xilinx-thematics audit heuristics that worked (derived from Plan 1 findings), the `latest`-symlink fragility for stable citations, and any Plan-1-surfaced patterns likely to recur. The file is append-only across phases — Phase 4+ prepend new sections without rewriting prior ones.
 
 ### Folded Todos
 - **Audit imported changes for Xilinx thematics** (`.planning/todos/pending/2026-04-12-audit-imported-changes-for-xilinx-thematics.md`) — folded as Phase 3 Plan 1. The todo's "Solution" steps 1-3 (derive checklist, audit imports, classify findings) are Plan 1's scope. Steps 4-5 (report for approval, apply fixes) are out of Plan 1 scope and become follow-up phases.
@@ -48,7 +58,8 @@ This phase does NOT: build the Xilinx flake, run xsim-based verification, exerci
 - Exact filename for Plan 2's sign-off doc (referred to as `03-sign-off.md` above — planner can choose something else as long as it's in the phase dir).
 - Grouping heuristic for the Xilinx-thematics audit checklist (e.g. whether to group by file or by theme).
 - Whether the gap matrix is inlined in the sign-off doc or split into a companion file.
-- Whether Plan 2 runs `svunit-certify-all` directly or wraps it in a reproducibility script (Plan 2 may choose to add one for VERI-01 clarity, but it's not required).
+- Reproducibility script language/shape — bash vs nix-run wrapper, interactive vs unattended — as long as D-07's contract is met.
+- Exact format of `LESSONS-LEARNED.md` entries (bullets vs prose vs table) — as long as D-09's content floor is met.
 
 </decisions>
 
@@ -125,7 +136,6 @@ This phase does NOT: build the Xilinx flake, run xsim-based verification, exerci
 - **Fixes for Xilinx-thematics audit findings** — the Plan 1 audit produces a report of likely fixes; applying those fixes is not Phase 3 scope. Surfaces as follow-up phases or maintainer-review items per D-06.
 - **Baseline-compared regression** — keeping a stored baseline against which future runs are diffed was considered but rejected for Phase 3 (no 25.1 sim-only baseline yet). Could re-open in a future sign-off round once baselines exist.
 - **Scheduled / CI-driven sign-off** — out of scope. Phase 3 is a point-in-time maintainer-run sign-off, not a continuous gate.
-- **Reproducibility script (`03-reproduce.sh`)** — optional, planner discretion under D-06.
 - **Machine-readable sign-off manifest for diffing future sign-offs** — surfaced during discussion, not folded. If Phase 3 sign-off becomes routine, this may warrant its own phase or a backlog item.
 
 ### Reviewed Todos (not folded)
