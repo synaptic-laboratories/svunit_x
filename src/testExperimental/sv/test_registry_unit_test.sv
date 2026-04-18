@@ -115,6 +115,19 @@ module test_registry_unit_test;
   `SVUNIT_TESTS_END
 
 
+  class fake_test extends test;
+
+    virtual function string name();
+      return "fake_test";
+    endfunction
+
+
+    virtual protected task test_body();
+    endtask
+
+  endclass
+
+
   class fake_test_builder extends test::builder;
 
     static function fake_test_builder new_instance();
@@ -123,7 +136,8 @@ module test_registry_unit_test;
 
 
     virtual function test create();
-      // Intentionally empty
+      fake_test t = new();
+      return t;
     endfunction
 
   endclass
