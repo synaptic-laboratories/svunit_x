@@ -176,12 +176,13 @@ for t in "${EXPECTED_TARGETS[@]}"; do
   OUTDIRS[$t]="$ARTEFACTS_ROOT/${SESSION_STAMP}--${t}"
 done
 
-# Probe: does the app wrapper accept `-- --output-dir PATH`, or must we export
-# OUTPUT_DIR? The app wrapper is a writeShellApplication that execs certify.sh;
-# certify.sh reads OUTPUT_DIR as env (line 121). The passthrough form we rely on
-# is `OUTPUT_DIR=<path> nix run ...` because `nix run ... -- <extra_args>` passes
-# args to the program, which certify.sh does not parse. This is the documented
-# contract; if nix/mk-certify.nix ever adds flag parsing, switch to that form.
+# Passthrough form — the app wrapper execs certify.sh "$@" (see
+# nix/mk-certify.nix exportsForTarget + text), and certify.sh DOES accept
+# `--output-dir DIR` as a CLI flag (scripts/certify.sh:36-62). The
+# script initializes OUTPUT_DIR="" unconditionally at line 36, so setting
+# OUTPUT_DIR as env does NOT work — the flag form is the only reliable
+# passthrough. `nix run .#app -- --output-dir PATH` forwards `-- --output-dir PATH`
+# to the wrapper, which forwards it to certify.sh via its `exec ... "$@"`.
 
 RUN_LOG="$PHASE_DIR/03-reproduce-${SESSION_STAMP}.log"
 touch "$RUN_LOG"
@@ -192,9 +193,10 @@ run_target() {
   echo "=============================================" | tee -a "$RUN_LOG"
   echo "[run] target=$target outdir=$outdir" | tee -a "$RUN_LOG"
   echo "=============================================" | tee -a "$RUN_LOG"
-  # certify.sh:121 respects OUTPUT_DIR env; so does the wrapper (it only exports
-  # target metadata and execs certify.sh with the current env).
-  OUTPUT_DIR="$outdir" nix run ".#svunit-certify-${target}" 2>&1 | tee -a "$RUN_LOG"
+  # nix run forwards `--` args to the wrapper, which exec's certify.sh "$@".
+  # certify.sh:55-62 parses `--output-dir DIR` into OUTPUT_DIR and bypasses
+  # the default QH_RUN_ID-based path.
+  nix run ".#svunit-certify-${target}" -- --output-dir "$outdir" 2>&1 | tee -a "$RUN_LOG"
   local rc=${PIPESTATUS[0]}
   echo "[run] target=$target exit=$rc" | tee -a "$RUN_LOG"
   return "$rc"
