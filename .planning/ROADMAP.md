@@ -59,6 +59,9 @@ Plans:
   3. Maintainer can see which simulator or tooling path, commands, and artifacts produced the sign-off result.
   4. Maintainer can review any remaining verification gaps or unverified areas called out alongside the Quartus sign-off record.
 **Plans**: 2 plans
+Plans:
+- [ ] `03-01-PLAN.md` — Xilinx-thematics audit of the Phase 2 import surface, grouped by theme with A/B/C classified findings (feeds the sign-off gap matrix)
+- [ ] `03-02-PLAN.md` — Sign-off regression run via `svunit-certify-all`, `03-sign-off.md` authoring (pass matrix + gap matrix + residuals + forward-looking), `03-reproduce.sh` reproducibility script, and `.planning/LESSONS-LEARNED.md` seed
 
 ### Phase 4: Maintainer Documentation & Handoff
 **Goal**: Maintainer can understand the sync method, sign-off boundary, deferred Xilinx-flake work, and any remaining review obligations without reconstructing project history.

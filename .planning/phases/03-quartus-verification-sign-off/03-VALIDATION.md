@@ -2,9 +2,10 @@
 phase: 3
 slug: quartus-verification-sign-off
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-18
+updated: 2026-04-18 (task IDs populated at plan-authoring time)
 ---
 
 # Phase 3 — Validation Strategy
@@ -37,17 +38,15 @@ created: 2026-04-18
 
 ## Per-Task Verification Map
 
-*(Populated by planner when PLAN.md files are authored. Contract: every task MUST have either an `<automated>` check or a Wave 0 dependency row here.)*
+Task-ID convention: `{phase:02}-{plan:02}-{task:02}` (zero-padded throughout), e.g. `03-01-01` = Phase 3 / Plan 01 / Task 01. Matches the `depends_on: ["03-01"]` form used in plan frontmatter.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 3-01-?? | 01 | ? | VERI-02 (Plan 1 feeds gap matrix) | — | audit scope stays within 31-file boundary | doc-structure | `grep -qE 'T1\|T2\|T3\|T4' 03-xilinx-thematics-audit.md` | created by Plan 1 | ⬜ pending |
-| 3-02-?? | 02 | ? | VERI-01 | — | preflight confirms flake + images + licenses | smoke | `nix flake show 2>&1 \| grep -c 'svunit-certify'` ≥ 6 | existing `flake.nix` | ⬜ pending |
-| 3-02-?? | 02 | ? | VERI-02 | — | regression pass across all 5 targets with 5 distinct run-ids | integration | `nix run .#svunit-certify-all` exit 0 AND `jq -r '.qualification_status' "$ARTEFACTS_ROOT"/*/build-info.json \| sort -u` == `PASS` (5 dir count) | created by certify-all |  ⬜ pending |
-| 3-02-?? | 02 | ? | VERI-03 | T-03-01 (license-disclosure) | sign-off doc cites paths, not license contents | doc-structure | `! grep -l 'SERVER.*\\|FEATURE\\|INCREMENT' 03-sign-off.md` AND gap-matrix columns grep passes | created by Plan 2 |  ⬜ pending |
-| 3-02-?? | 02 | ? | VERI-01 (D-07) | — | `03-reproduce.sh` drives certify-all and captures 5 run-ids | smoke | `bash -n .planning/phases/03-quartus-verification-sign-off/03-reproduce.sh` exit 0 | created by Plan 2 |  ⬜ pending |
-| 3-02-?? | 02 | ? | VERI-03 (D-08) | — | `03-sign-off.md` contains `## Next Sign-Off Round` section | doc-structure | `grep -q '^## Next Sign-Off Round' 03-sign-off.md` | created by Plan 2 |  ⬜ pending |
-| 3-02-?? | 02 | ? | VERI-03 (D-09) | — | `.planning/LESSONS-LEARNED.md` seeded with Phase 3 section | doc-structure | `grep -q '^## Phase 3' .planning/LESSONS-LEARNED.md` AND `grep -qE 'run-id.*collision\|latest.*symlink\|Xilinx.*theme' .planning/LESSONS-LEARNED.md` | created by Plan 2 |  ⬜ pending |
+| 03-01-01 | 01 | 1 | VERI-02 (feeds gap matrix), VERI-03 (Plan 1 cross-reference) | T-03-02, T-03-03 | audit scope constrained to 31-file list; no source files modified | doc-structure | `grep -c '^## Theme T' 03-xilinx-thematics-audit.md` == `4` AND scope anchor `84b88033590a1469a238be84d8526b25a9f29d10` present AND `git diff --name-only HEAD -- bin/ svunit_base/ src/ test/utils.py` returns 0 | created by Plan 1 Task 1 | ⬜ pending |
+| 03-02-01 | 02 | 2 | VERI-01 (D-07 preflight + reproduce script) | T-03-01, T-03-05 | preflight confirms licenses + images + flake; `03-reproduce.sh` does not cite `latest` | smoke | `bash -n 03-reproduce.sh` exit 0 AND `grep -q 'nix run .#svunit-certify-all' 03-reproduce.sh` AND `grep -q 'quartus-23-4-qrun' 03-reproduce.sh` AND (5 target greps all match) | created by Plan 2 Task 1 | ⬜ pending |
+| 03-02-02 | 02 | 2 | VERI-01, VERI-02 (D-01, D-02) | T-03-04 | regression pass across all 5 targets with 5 distinct run-ids; all targets ran against one svunit_commit | integration | `awk -F'\t' 'NR>1' $TSV \| wc -l` == `5` AND `awk -F'\t' 'NR>1 {print $3}' $TSV \| sort -u` == `PASS` AND `awk -F'\t' 'NR>1 {print $2}' $TSV \| sort -u \| wc -l` == `5` AND `awk -F'\t' 'NR>1 {print $8}' $TSV \| sort -u \| wc -l` == `1` | created by Plan 2 Task 2 | ⬜ pending |
+| 03-02-03 | 02 | 2 | VERI-01, VERI-02, VERI-03 (D-03, D-04, D-05, D-08) | T-03-01, T-03-02 | sign-off doc cites paths, not license contents; no `/latest/` citations; all 9 headings + 5 targets + 7 residuals + 3 requirement IDs + 5 gap columns present | doc-structure | 9 heading greps pass AND `grep -E '/latest/(build-info\|qualification-results)' 03-sign-off.md` returns nothing AND `grep -E 'SERVER [a-z0-9]\|FEATURE [A-Z0-9]{3,}\|INCREMENT [A-Z]' 03-sign-off.md` returns nothing | created by Plan 2 Task 3 | ⬜ pending |
+| 03-02-04 | 02 | 2 | VERI-03 (D-09) | — | `.planning/LESSONS-LEARNED.md` seeded with Phase 3 section; 4+ lessons; append-only policy stated; no decision-ID recap | doc-structure | `grep -q '^## Phase 3' .planning/LESSONS-LEARNED.md` AND `grep -cE '^### L3-' .planning/LESSONS-LEARNED.md` >= `4` AND `grep -qiE 'run-id.*collision\|latest.*symlink\|Xilinx-thematic' .planning/LESSONS-LEARNED.md` AND `grep -qE 'append-only\|PREPEND' .planning/LESSONS-LEARNED.md` | created by Plan 2 Task 4 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -55,9 +54,9 @@ created: 2026-04-18
 
 ## Wave 0 Requirements
 
-- [ ] No test file creation needed — Plan 1 and Plan 2 both rely on inline shell/grep/jq validation.
-- [ ] No framework install needed — `nix`, `jq`, `grep`, `podman` are in the dev shell or on the host.
-- [ ] `bash -n` syntax check available on the host for D-07's `03-reproduce.sh` (no install).
+- [x] No test file creation needed — Plan 1 and Plan 2 both rely on inline shell/grep/jq validation.
+- [x] No framework install needed — `nix`, `jq`, `grep`, `podman` are in the dev shell or on the host.
+- [x] `bash -n` syntax check available on the host for D-07's `03-reproduce.sh` (no install).
 
 *(No blocking Wave 0 gaps.)*
 
@@ -70,16 +69,17 @@ created: 2026-04-18
 | Maintainer judges gap-matrix completeness | VERI-03 | The structural greps confirm the matrix columns and residual IDs exist, but judging whether *the right gaps* are enumerated requires human review against PROJECT.md intent. | Maintainer reads `03-sign-off.md` §Gap Matrix and compares against PROJECT.md deferrals + PHASE 1/2 carry-forwards. |
 | Maintainer judges forward-looking "Next Sign-Off Round" realism | VERI-03 (D-08) | Whether the section identifies the *right* drift risks is a judgement call informed by the environment. | Maintainer reads `03-sign-off.md` §Next Sign-Off Round and sanity-checks the flake-pin / license / XFLK-01 callouts. |
 | Maintainer judges whether `LESSONS-LEARNED.md` captures non-obvious lessons | VERI-03 (D-09) | Content-floor greps exist (D-09 minimums), but "is this actually useful for the next revision" is human. | Maintainer reads `.planning/LESSONS-LEARNED.md` §Phase 3 and confirms it contains reusable lessons, not a decision recap. |
+| Maintainer judges Plan 1 A/B findings severity | VERI-02 (via gap matrix) | Classification is rule-based (A/B/C grep hits) but the *materiality* of each finding for downstream fixes is a maintainer call. | Maintainer reads `03-xilinx-thematics-audit.md` Findings tables and confirms A-class findings represent real fork intent drift, not grep false positives. |
 
 ---
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 60s for per-task validators (full regression is gated per-wave only)
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 60s for per-task validators (full regression is gated per-wave only)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** populated at plan-authoring time; awaiting task execution.

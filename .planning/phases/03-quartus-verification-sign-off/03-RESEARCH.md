@@ -661,22 +661,22 @@ Aside: `pytest-datafiles` is pinned to `==2.0` because the SVUnit suite uses the
 
 All four are low-to-medium risk and can be verified by the planner at task-description time without needing user confirmation.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should Plan 2 preflight-build missing Quartus images, or fail if they're missing?**
    - What we know: `svunit-quartus-tools-<base>` wrappers exist (`flake.nix:149-164`) and can build images. But they require `LOCAL_INSTALLER_DIR` set to an installer tree at `$installerRoot` (which is `null` for 25.1 sim-only — it "builds via S3", per `nix/registry.nix:67`).
    - What's unclear: Whether the sign-off run should halt and ask the maintainer to build images, or attempt the build itself.
-   - Recommendation: Plan 2's first task FAILS with a clear error listing missing images; does not attempt to build. Building images is a separate maintainer ritual.
+   - RESOLVED: Plan 2's first task (preflight in `03-02-PLAN.md` Task 1 Part A) FAILS FAST with a clear error listing the missing image tag and the `nix run .#svunit-quartus-tools-<base>` command to build it. It does NOT attempt to build images itself. Building images is a separate maintainer ritual (`LOCAL_INSTALLER_DIR` handling, S3 pull for 25.1 sim-only).
 
 2. **Is the cross-target timing report part of the sign-off doc, or a separate deliverable?**
    - What we know: `svunit-certify-all` ends with a `svunit-timing-report` pass (`flake.nix:202-203`). Output is a markdown table per hostname plus per-test comparison tables.
    - What's unclear: Whether the maintainer wants timing data inlined in `03-sign-off.md`, linked from it, or left as a Plan 2 side-artefact.
-   - Recommendation: Reference only. Timing data goes into a separate `03-timing-report.md` saved at the phase dir or linked from the sign-off's "evidence" pointer list. Keeps the sign-off doc focused on pass/gap/residuals.
+   - RESOLVED: Reference only — timing is NOT inlined in `03-sign-off.md`. The nine locked sign-off headings (Pass Matrix, Environment, Command Executed, Gap Matrix, Carried-Forward Residuals, Xilinx-Thematics Audit Cross-Reference, Requirement Coverage, Next Sign-Off Round — per 03-02-PLAN.md §Task 3) contain no timing section; `svunit-timing-report` output stays a Plan 2 side-artefact reachable via the per-target artefacts dirs cited in §Pass Matrix. Keeps the sign-off doc focused on pass/gap/residuals.
 
 3. **Should the sign-off doc call out the `svunit_commit` explicitly?**
    - What we know: Each `build-info.json` records the exact `svunit_commit` the test ran against (via `git -C $REPO_ROOT rev-parse HEAD` in `scripts/certify.sh:124`). All 5 targets in a single `svunit-certify-all` run should share this hash.
    - What's unclear: Whether the sign-off doc should include it as a single top-line "Commit under test: <sha>" or as a per-target column in the pass matrix.
-   - Recommendation: Both. Top-line for immediate maintainer read; per-target column as evidence-that-all-5-ran-against-the-same-commit (which is the whole point — proving a synchronised fork passes).
+   - RESOLVED: Both. `03-sign-off.md` calls out `svunit_commit` as a top-line "Commit under test: <short SHA> (<full SHA>)" header for immediate maintainer read AND as a per-target column in §Pass Matrix as evidence that all 5 targets ran against the same commit (which is the whole point — proving a synchronised fork passes). Enforced by Plan 2 Task 2 acceptance criterion: `awk -F'\t' 'NR>1 {print $8}' "$TSV" | sort -u | wc -l` MUST return `1`.
 
 ## Environment Availability
 
