@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Fork Delta Baseline & Intent Record** - Confirm the upstream target and classify the fork-specific Xilinx/Vivado delta before merge work starts. (completed 2026-04-12)
 - [x] **Phase 2: History-Aware Upstream Integration** - Catch the fork up to upstream while preserving required local behavior and isolating risky merge outcomes for human review. (completed 2026-04-12)
-- [ ] **Phase 3: Quartus Verification & Sign-Off** - Prove the synchronized fork passes this stage's required regression flow in the certified Quartus environment.
+- [x] **Phase 3: Quartus Verification & Sign-Off** - Prove the synchronized fork passes this stage's required regression flow in the certified Quartus environment. (completed 2026-04-18)
 - [ ] **Phase 4: Maintainer Documentation & Handoff** - Leave maintainers with the sign-off boundary, sync method, and deferred-work guidance in repo documentation.
 
 ## Phase Details
@@ -83,5 +83,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Fork Delta Baseline & Intent Record | 3/3 | Complete    | 2026-04-12 |
 | 2. History-Aware Upstream Integration | 3/3 | Complete | 2026-04-12 |
-| 3. Quartus Verification & Sign-Off | 1/2 | In Progress|  |
+| 3. Quartus Verification & Sign-Off | 2/2 | Complete   | 2026-04-18 |
 | 4. Maintainer Documentation & Handoff | 0/2 | Not started | - |
