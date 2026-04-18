@@ -263,7 +263,7 @@ if (defined $filter && $simulator ne "verilator") {
   }
 }
 
-if (defined $list_tests) {
+if (defined $list_tests && $simulator ne "verilator") {
     if ($simulator eq "xsim") {
         $cmd .= " --testplusarg SVUNIT_LIST_TESTS";
     }
