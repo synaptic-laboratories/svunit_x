@@ -1,22 +1,22 @@
 # Phase 03 Sign-Off Record
 
 **Phase:** 03-quartus-verification-sign-off
-**Signed off:** 2026-04-18T13:05:00Z
-**Commit under test:** `0c4a1e3` (`0c4a1e3fa7eefa5cbf66cfd06c9c56f4d28162f8`)
+**Signed off:** 2026-04-18T15:39:00Z
+**Commit under test:** `bb2227c` (`bb2227cf471977750eb6ee3a7acaa6c4e9e681b3`)
 **Upstream target:** v3.38.1 peeled at `8e70653e2cbfe3ebe154a863a46bf482ded4bc19` (derived merge-base `84b88033590a1469a238be84d8526b25a9f29d10`)
 **Artefacts root:** `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/`
 **Manifest (source of truth):** [`03-sign-off-manifest.tsv`](03-sign-off-manifest.tsv)
-**Session stamp:** `20260418-125423-3830a363` (maps each per-target evidence dir basename `${SESSION_STAMP}--${target}`)
+**Session stamp:** `20260418-153312-003a5b56` (maps each per-target evidence dir basename `${SESSION_STAMP}--${target}`)
 
 ## Pass Matrix
 
 | Target | Run ID | Status | Passed | Skipped | pytest_filter | svunit_commit | Evidence |
 |---|---|---|---|---|---|---|---|
-| quartus-23-4-qrun              | `20260418-1254--nixos-25.11--nix-2.31.2--kernel-6.12.70` | PASS | 48 | 3 | `qrun and not uvm_simple_model`       | `0c4a1e3` | `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/20260418-125423-3830a363--quartus-23-4-qrun/build-info.json` |
-| quartus-23-4-modelsim          | `20260418-1255--nixos-25.11--nix-2.31.2--kernel-6.12.70` | PASS | 46 | 3 | `modelsim and not uvm_simple_model`   | `0c4a1e3` | `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/20260418-125423-3830a363--quartus-23-4-modelsim/build-info.json` |
-| quartus-25-1-sim-only-qrun     | `20260418-1256--nixos-25.11--nix-2.31.2--kernel-6.12.70` | PASS | 48 | 3 | `qrun and not uvm_simple_model`       | `0c4a1e3` | `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/20260418-125423-3830a363--quartus-25-1-sim-only-qrun/build-info.json` |
-| quartus-25-1-sim-only-modelsim | `20260418-1258--nixos-25.11--nix-2.31.2--kernel-6.12.70` | PASS | 46 | 3 | `modelsim and not uvm_simple_model`   | `0c4a1e3` | `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/20260418-125423-3830a363--quartus-25-1-sim-only-modelsim/build-info.json` |
-| verilator-5-044                | `20260418-1300--nixos-25.11--nix-2.31.2--kernel-6.12.70` | PASS | 47 | 9 | `verilator`                           | `0c4a1e3` | `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/20260418-125423-3830a363--verilator-5-044/build-info.json` |
+| quartus-23-4-qrun              | `20260418-1533--nixos-25.11--nix-2.31.2--kernel-6.12.70` | PASS | 48 | 3 | `qrun and not uvm_simple_model`       | `bb2227c` | `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/20260418-153312-003a5b56--quartus-23-4-qrun/build-info.json` |
+| quartus-23-4-modelsim          | `20260418-1534--nixos-25.11--nix-2.31.2--kernel-6.12.70` | PASS | 46 | 3 | `modelsim and not uvm_simple_model`   | `bb2227c` | `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/20260418-153312-003a5b56--quartus-23-4-modelsim/build-info.json` |
+| quartus-25-1-sim-only-qrun     | `20260418-1535--nixos-25.11--nix-2.31.2--kernel-6.12.70` | PASS | 48 | 3 | `qrun and not uvm_simple_model`       | `bb2227c` | `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/20260418-153312-003a5b56--quartus-25-1-sim-only-qrun/build-info.json` |
+| quartus-25-1-sim-only-modelsim | `20260418-1536--nixos-25.11--nix-2.31.2--kernel-6.12.70` | PASS | 46 | 3 | `modelsim and not uvm_simple_model`   | `bb2227c` | `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/20260418-153312-003a5b56--quartus-25-1-sim-only-modelsim/build-info.json` |
+| verilator-5-044                | `20260418-1537--nixos-25.11--nix-2.31.2--kernel-6.12.70` | PASS | 47 | 9 | `verilator`                           | `bb2227c` | `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/20260418-153312-003a5b56--verilator-5-044/build-info.json` |
 
 Reviewer verification (jq-semantic — review concern #5):
 
@@ -50,16 +50,16 @@ awk -F'\t' 'NR>1 {print $1, $9}' \
 | Qualified version | `3.38.1-x0.2.0` |
 | License files | `/srv/share/repo/sll/g_sll_poc/g_2026/ContainerPlayPen/launch/quartus_license.dat`, `/srv/share/repo/sll/g_sll_poc/g_2026/ContainerPlayPen/launch/questa_license.dat` (paths only — contents not embedded) |
 
-**Environmental note — Questa 2025.1 SALT licensing migration:** During this phase the 25.1 sim-only targets initially failed with `Invalid license environment. Application closing.` (exit code 3 from `vsim`) after `vlog`/`vopt` had already succeeded. Root cause: Questa 2025.1 migrated to SALT v2.4.2.0 and reads the `SALT_LICENSE_SERVER` env var instead of the deprecated `LM_LICENSE_FILE`. Commit `292a8a0` (`fix(certify): set SALT_LICENSE_SERVER for Questa 2025.1 licensing`) sets both env vars side-by-side in `scripts/certify.sh` and `scripts/quartus-shell.sh`. Questa 2023.3 silently ignores the unknown `SALT_LICENSE_SERVER`; Questa 2025.1 silently ignores the deprecated `LM_LICENSE_FILE`. The fix is idempotent — no per-version branching needed. Without this commit the 25.1 sim-only qrun/modelsim targets cannot pass. Recorded here because any future re-sign against a newer Questa major is at risk of the same env-var contract changing again.
+**Environmental note — Questa 2025.1 SALT licensing migration:** During this phase the 25.1 sim-only targets initially failed with `Invalid license environment. Application closing.` (exit code 3 from `vsim`) after `vlog`/`vopt` had already succeeded. Root cause: Questa 2025.1 migrated to SALT v2.4.2.0 and reads the `SALT_LICENSE_SERVER` env var instead of the deprecated `LM_LICENSE_FILE`. Commit `292a8a0` (the SALT licensing fix) sets both env vars side-by-side in `scripts/certify.sh` and `scripts/quartus-shell.sh`. Questa 2023.3 silently ignores the unknown `SALT_LICENSE_SERVER`; Questa 2025.1 silently ignores the deprecated `LM_LICENSE_FILE`. The fix is idempotent — no per-version branching needed. Without this commit the 25.1 sim-only qrun/modelsim targets cannot pass. Recorded here because any future re-sign against a newer Questa major is at risk of the same env-var contract changing again.
 
 ## Command Executed
 
 ```bash
 cd /srv/share/repo/pub/com/github/synaptic-laboratories/svunit_x
-bash .planning/phases/03-quartus-verification-sign-off/03-reproduce.sh
+bash .planning/phases/03-quartus-verification-sign-off/03-reproduce.sh --smoke-aggregate
 ```
 
-The script runs each of the 5 per-target apps with an explicit unique `--output-dir`, under a `flock`'d shared artefacts root, with host-tool + license + image + offline + writability preflight. Session stamp `20260418-125423-3830a363` is the shared prefix for the 5 per-target evidence dirs. See [`03-reproduce.sh`](03-reproduce.sh) for the exact logic.
+The script runs each of the 5 per-target apps with an explicit unique `--output-dir`, under a `flock`'d shared artefacts root, with host-tool + license + image + offline + writability preflight. The `--smoke-aggregate` flag also verifies that the aggregate `svunit-certify-all` app is exposed by the flake before the per-target rerun starts. Session stamp `20260418-153312-003a5b56` is the shared prefix for the 5 per-target evidence dirs. See [`03-reproduce.sh`](03-reproduce.sh) for the exact logic.
 
 ## Gap Matrix
 
@@ -105,7 +105,7 @@ Because Plan 1 produced **zero class-A and zero class-B findings**, the Phase 2 
 ## Requirement Coverage
 
 - **VERI-01** (Maintainer can run the required regression flow via the certified Quartus flake): Satisfied by the 5 per-target `nix run` invocations driven from [`03-reproduce.sh`](03-reproduce.sh). Preflight confirms host tools + license files + container images + `ARTEFACTS_ROOT` writability + `bootstrap.pypa.io` reachability before the run starts. See §Command Executed.
-- **VERI-02** (Quartus-based sign-off demonstrates that the synchronized fork passes the required regression suite for this stage): Satisfied by §Pass Matrix above — all 5 registered targets report `qualification_status=PASS` in their respective `build-info.json` files at the cited unique output-dirs under session stamp `20260418-125423-3830a363`. Verifiable by the jq-semantic one-liner in §Pass Matrix.
+- **VERI-02** (Quartus-based sign-off demonstrates that the synchronized fork passes the required regression suite for this stage): Satisfied by §Pass Matrix above — all 5 registered targets report `qualification_status=PASS` in their respective `build-info.json` files at the cited unique output-dirs under session stamp `20260418-153312-003a5b56`. Verifiable by the jq-semantic one-liner in §Pass Matrix.
 - **VERI-03** (Verification output records what was run, under which simulator/tooling path, and any remaining coverage gaps): Satisfied by §Pass Matrix (what + simulator path + commit + pytest filter + evidence path), §Environment (host/container/tool versions including the 2025.1 SALT licensing note), §Gap Matrix (5 dimensions per D-05), §Carried-Forward Residuals (7 items per D-03), §Xilinx-Thematics Audit Cross-Reference (Plan 1 consumption), and §Next Sign-Off Round (forward-looking per D-08).
 
 ## Next Sign-Off Round
@@ -120,7 +120,7 @@ Forward-looking only — does NOT duplicate §Gap Matrix (current coverage state
 
    Any pin move is a new sign-off — re-verify the pass matrix with the new pins. Pay particular attention to Quartus major-version bumps: Questa 2025.1 migrated from `LM_LICENSE_FILE` to `SALT_LICENSE_SERVER` (see §Environment note); any future Questa ≥2026 bump may change the env-var contract again and should be re-verified before re-signing.
 
-2. **Artefacts-root assumptions.** Canonical path `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/` is stamped into `flake.nix`. Verify directory still exists, is maintainer-writable, and that retention has not rotated out prior run-ids this sign-off cites. Sign-off citations use explicit session-stamped directory basenames of the form `${SESSION_STAMP}--${target}` (see the Pass Matrix above for the 5 literal paths under session `20260418-125423-3830a363`) — these are stable as long as retention does not prune the session.
+2. **Artefacts-root assumptions.** Canonical path `/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts/` is stamped into `flake.nix`. Verify directory still exists, is maintainer-writable, and that retention has not rotated out prior run-ids this sign-off cites. Sign-off citations use explicit session-stamped directory basenames of the form `${SESSION_STAMP}--${target}` (see the Pass Matrix above for the 5 literal paths under session `20260418-153312-003a5b56`) — these are stable as long as retention does not prune the session.
 
 3. **UVM `svverification` license gate.** Per-target pytest filter excludes `uvm_simple_model` on the 4 Quartus targets because the container lacks the `svverification` license. If that license becomes available, drop `and not uvm_simple_model` from the 4 Quartus filters in `nix/registry.nix` and re-sign.
 

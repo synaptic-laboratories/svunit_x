@@ -13,7 +13,7 @@ requires:
   - phase: 01-fork-delta-baseline-intent-record
     provides: "Derived merge-base 84b88033590a1469a238be84d8526b25a9f29d10; HR-01/02 residuals"
 provides:
-  - "Phase 3 GREEN sign-off: 5/5 registered certify targets PASS against svunit_commit 0c4a1e3"
+  - "Phase 3 GREEN sign-off refreshed: 5/5 registered certify targets PASS against svunit_commit bb2227c"
   - "Reproducibility companion 03-reproduce.sh (D-07): 5 per-target apps with flock + preflight + unique output-dirs"
   - "Phase-dir-resident run-id manifest 03-sign-off-manifest.tsv (single source of truth)"
   - "Maintainer sign-off record 03-sign-off.md with 9 locked sections (D-03, D-04, D-05, D-08)"
@@ -44,8 +44,8 @@ key-files:
     - ".planning/phases/03-quartus-verification-sign-off/03-reproduce.sh (authored 53bdf28; fix 46b3307)"
 
 key-decisions:
-  - "Re-ran 03-reproduce.sh from scratch against current HEAD 0c4a1e3 (includes SALT licensing fix 292a8a0); replaced stale 3-PASS/2-FAIL aborted manifest from commit a17110b"
-  - "All 5 Pass Matrix rows cite explicit session-stamped evidence paths (session 20260418-125423-3830a363), never /latest/ (D-04)"
+  - "Re-ran 03-reproduce.sh from scratch against current HEAD bb2227c after Phase 1/2 code-review fixes; refreshed the phase-dir manifest with 5/5 PASS rows"
+  - "All 5 Pass Matrix rows cite explicit session-stamped evidence paths (session 20260418-153312-003a5b56), never /latest/ (D-04)"
   - "Environmental note in 03-sign-off.md documents the Questa 2025.1 SALT_LICENSE_SERVER migration as factual phase history (unblocker for 25.1 sim-only)"
   - "LESSONS-LEARNED.md seeded with 7 lessons (D-09 floor = 4), including a prominent L3-04 entry on the SALT licensing migration"
   - "Unified prepend/immutable section policy (resolving the reviews-pass append-only-vs-prepend contradiction)"
@@ -64,7 +64,7 @@ completed: 2026-04-18
 
 # Phase 3 Plan 2: Consolidated Sign-Off Summary
 
-**Re-ran the 5-target certify regression against current HEAD (0c4a1e3) using 03-reproduce.sh, overwrote the stale 3-PASS/2-FAIL aborted manifest with a fresh 5/5 PASS manifest, authored the consolidated sign-off record 03-sign-off.md (9 locked sections; no /latest/ citations; no unfilled placeholders; jq-semantic acceptance green), and seeded the project-level LESSONS-LEARNED.md with 7 Phase 3 lessons including the Questa 2025.1 SALT licensing migration (L3-04). Phase 3 is GREEN: all 5 registered certify targets PASS; VERI-01 / VERI-02 / VERI-03 satisfied.**
+**Re-ran the 5-target certify regression against current HEAD (bb2227c) using `03-reproduce.sh --smoke-aggregate`, refreshed the phase-dir manifest with a new 5/5 PASS session (`20260418-153312-003a5b56`), updated the consolidated sign-off record and verification report to cite the fresh evidence, and retained the project-level lessons from the original Phase 3 sign-off. Phase 3 remains GREEN: all 5 registered certify targets PASS; VERI-01 / VERI-02 / VERI-03 satisfied.**
 
 ## Performance
 
@@ -83,13 +83,13 @@ completed: 2026-04-18
 
 | Target | Run ID | Status | Passed | Skipped | Commit | Evidence basename |
 |---|---|---|---|---|---|---|
-| quartus-23-4-qrun              | 20260418-1254--nixos-25.11--nix-2.31.2--kernel-6.12.70 | PASS | 48 | 3 | 0c4a1e3 | `20260418-125423-3830a363--quartus-23-4-qrun` |
-| quartus-23-4-modelsim          | 20260418-1255--nixos-25.11--nix-2.31.2--kernel-6.12.70 | PASS | 46 | 3 | 0c4a1e3 | `20260418-125423-3830a363--quartus-23-4-modelsim` |
-| quartus-25-1-sim-only-qrun     | 20260418-1256--nixos-25.11--nix-2.31.2--kernel-6.12.70 | PASS | 48 | 3 | 0c4a1e3 | `20260418-125423-3830a363--quartus-25-1-sim-only-qrun` |
-| quartus-25-1-sim-only-modelsim | 20260418-1258--nixos-25.11--nix-2.31.2--kernel-6.12.70 | PASS | 46 | 3 | 0c4a1e3 | `20260418-125423-3830a363--quartus-25-1-sim-only-modelsim` |
-| verilator-5-044                | 20260418-1300--nixos-25.11--nix-2.31.2--kernel-6.12.70 | PASS | 47 | 9 | 0c4a1e3 | `20260418-125423-3830a363--verilator-5-044` |
+| quartus-23-4-qrun              | 20260418-1533--nixos-25.11--nix-2.31.2--kernel-6.12.70 | PASS | 48 | 3 | bb2227c | `20260418-153312-003a5b56--quartus-23-4-qrun` |
+| quartus-23-4-modelsim          | 20260418-1534--nixos-25.11--nix-2.31.2--kernel-6.12.70 | PASS | 46 | 3 | bb2227c | `20260418-153312-003a5b56--quartus-23-4-modelsim` |
+| quartus-25-1-sim-only-qrun     | 20260418-1535--nixos-25.11--nix-2.31.2--kernel-6.12.70 | PASS | 48 | 3 | bb2227c | `20260418-153312-003a5b56--quartus-25-1-sim-only-qrun` |
+| quartus-25-1-sim-only-modelsim | 20260418-1536--nixos-25.11--nix-2.31.2--kernel-6.12.70 | PASS | 46 | 3 | bb2227c | `20260418-153312-003a5b56--quartus-25-1-sim-only-modelsim` |
+| verilator-5-044                | 20260418-1537--nixos-25.11--nix-2.31.2--kernel-6.12.70 | PASS | 47 | 9 | bb2227c | `20260418-153312-003a5b56--verilator-5-044` |
 
-All 5 rows share `svunit_commit = 0c4a1e3fa7eefa5cbf66cfd06c9c56f4d28162f8` (regression consistency check passes). All 5 target names distinct. All 5 run_ids distinct. All 5 evidence paths exist and jq-verify PASS. All 5 build-info.json `.target` fields match the TSV row target.
+All 5 rows share `svunit_commit = bb2227cf471977750eb6ee3a7acaa6c4e9e681b3` (regression consistency check passes). All 5 target names distinct. All 5 run_ids distinct. All 5 evidence paths exist and jq-verify PASS. All 5 build-info.json `.target` fields match the TSV row target.
 
 ## Task Commits
 
