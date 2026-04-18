@@ -479,13 +479,17 @@ TAILEOF
     echo "- image-inspect.json — container image metadata."
   fi
 
-  cat <<RAWEOF
+  # Reference the raw log rather than inlining it.  Inlining inside a fenced
+  # code block is hazardous: any pytest/tool output line containing three or
+  # more consecutive backticks prematurely terminates the outer fence and
+  # corrupts the evidence artefact layout (WR-01).  The file is already
+  # listed in the Evidence section above, so linking is sufficient and
+  # avoids doubling storage.
+  cat <<'RAWEOF'
 
 ## Raw Output
 
-\`\`\`text
-$(cat "${OUTPUT_DIR}/test-log.txt")
-\`\`\`
+See `test-log.txt` in this directory for the full unmodified output.
 RAWEOF
 } > "${OUTPUT_DIR}/qualification-results.md"
 
