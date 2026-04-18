@@ -163,7 +163,12 @@ pip3 install --break-system-packages -q "pytest>=7,<9" "pytest-datafiles==2.0" 2
 echo "--- version checks ---"
 fail=0
 if [ "${TARGET_HAS_QUARTUS_SH}" = "1" ]; then
-  if ! quartus_sh --version 2>&1 | grep -qF "${TARGET_EXPECTED_QUARTUS}"; then
+  # Capture output in a variable so a non-zero exit from the tool (which can
+  # happen when the tool prints a valid header and then reports an
+  # error-suppressible diagnostic, e.g. qrun 2025.1 on `-version`) does not
+  # break the version check under `set -o pipefail`.
+  qsh_out="$(quartus_sh --version 2>&1 || true)"
+  if ! printf '%s\n' "$qsh_out" | grep -qF "${TARGET_EXPECTED_QUARTUS}"; then
     echo "FAIL: quartus_sh version does not match ${TARGET_EXPECTED_QUARTUS}" >&2
     fail=1
   else
@@ -173,7 +178,10 @@ else
   echo "SKIP: quartus_sh version check (sim-only image, no Quartus installed)"
 fi
 for tool in qrun vlog vsim; do
-  if ! "$tool" -version 2>&1 | grep -qF "${TARGET_EXPECTED_QUESTA}"; then
+  # See quartus_sh comment above; same pattern used for native Verilator at
+  # lines 93-97. Shields the grep from a pipefail on a header-plus-error exit.
+  tool_out="$("$tool" -version 2>&1 || true)"
+  if ! printf '%s\n' "$tool_out" | grep -qF "${TARGET_EXPECTED_QUESTA}"; then
     echo "FAIL: $tool version does not match ${TARGET_EXPECTED_QUESTA}" >&2
     fail=1
   else
