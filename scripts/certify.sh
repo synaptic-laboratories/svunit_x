@@ -283,11 +283,49 @@ esac
 # Parse JUnit XML for pass/fail summary
 # ---------------------------------------------------------------------------
 if [ -f "${OUTPUT_DIR}/tests.xml" ]; then
-  TOTAL="$(grep -oP '\btests="\K[0-9]+' "${OUTPUT_DIR}/tests.xml" | head -1 || echo "0")"
-  FAILURES="$(grep -oP '\bfailures="\K[0-9]+' "${OUTPUT_DIR}/tests.xml" | head -1 || echo "0")"
-  ERRORS="$(grep -oP '\berrors="\K[0-9]+' "${OUTPUT_DIR}/tests.xml" | head -1 || echo "0")"
-  SKIPPED="$(grep -oP '\bskipped="\K[0-9]+' "${OUTPUT_DIR}/tests.xml" | head -1 || echo "0")"
-  PASSED=$((TOTAL - FAILURES - ERRORS - SKIPPED))
+  # Single atomic XML parse (WR-02): prefer a <testsuites> wrapper's aggregate
+  # attrs; fall back to summing across direct <testsuite> children.  On parse
+  # failure, emit a clear diagnostic and zero the counters so STATUS=FAIL
+  # distinguishes "parse failure" from "no tests ran" (python exits non-zero
+  # and prints to stderr; previous behaviour silently collapsed both cases
+  # into `0 passed, FAIL`).
+  if xml_counts="$(python3 - "${OUTPUT_DIR}/tests.xml" <<'PY'
+import sys, xml.etree.ElementTree as ET
+try:
+    root = ET.parse(sys.argv[1]).getroot()
+except (ET.ParseError, OSError) as e:
+    print(f"certify.sh: failed to parse tests.xml: {e}", file=sys.stderr)
+    sys.exit(2)
+
+def intattr(node, name):
+    try:
+        return int(node.attrib.get(name, 0))
+    except (TypeError, ValueError):
+        return 0
+
+# Prefer the top-level element's aggregate attrs if present; otherwise sum
+# across direct <testsuite> children (handles pytest's <testsuites> wrapper
+# that lacks aggregate attrs on the top element).
+if "tests" in root.attrib:
+    total = intattr(root, "tests")
+    failures = intattr(root, "failures")
+    errors = intattr(root, "errors")
+    skipped = intattr(root, "skipped")
+else:
+    suites = root.findall("testsuite")
+    total = sum(intattr(s, "tests") for s in suites)
+    failures = sum(intattr(s, "failures") for s in suites)
+    errors = sum(intattr(s, "errors") for s in suites)
+    skipped = sum(intattr(s, "skipped") for s in suites)
+print(total, failures, errors, skipped)
+PY
+  )"; then
+    read -r TOTAL FAILURES ERRORS SKIPPED <<<"${xml_counts}"
+    PASSED=$((TOTAL - FAILURES - ERRORS - SKIPPED))
+  else
+    echo "WARN: tests.xml parse failed; marking run as FAIL" >&2
+    TOTAL=0; FAILURES=0; ERRORS=0; SKIPPED=0; PASSED=0
+  fi
 else
   TOTAL=0; FAILURES=0; ERRORS=0; SKIPPED=0; PASSED=0
 fi
