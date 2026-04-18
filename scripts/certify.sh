@@ -150,6 +150,23 @@ case "${TARGET_ADAPTER}" in
     container_script="$(cat <<'CONTAINER_EOF'
 set -euo pipefail
 
+# --- Bootstrap Perl core modules (File::Find, etc) ---
+# Some sim-only container variants (e.g. quartus-pro-linux:25.1.1.125-sim-only)
+# ship with `perl-base` only, which lacks core modules like File::Find that
+# bin/runSVUnit requires. If File::Find is missing we install `perl-modules-<ver>`
+# via apt. This is idempotent and no-ops on images that already have it
+# (e.g. quartus-pro-linux:23.4.0.79 which ships with `perl` full).
+if ! perl -MFile::Find -e 1 >/dev/null 2>&1; then
+  echo "--- bootstrap: installing perl-modules (File::Find missing) ---"
+  apt-get update -q >/dev/null 2>&1
+  perl_ver="$(perl -e 'printf "%d.%d", $^V->{version}[0], $^V->{version}[1]' 2>/dev/null || echo 5.38)"
+  apt-get install -y -q --no-install-recommends "perl-modules-${perl_ver}" >/dev/null 2>&1 || \
+    apt-get install -y -q --no-install-recommends perl-modules >/dev/null 2>&1 || \
+    { echo "FAIL: could not install perl-modules-${perl_ver}" >&2; exit 2; }
+  perl -MFile::Find -e 1 || { echo "FAIL: File::Find still unavailable after apt install" >&2; exit 2; }
+  echo "OK: perl-modules-${perl_ver} installed"
+fi
+
 # --- Bootstrap pytest ---
 python3 -c "
 import urllib.request, tempfile, subprocess, sys
