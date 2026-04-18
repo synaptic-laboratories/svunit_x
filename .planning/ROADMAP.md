@@ -83,5 +83,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Fork Delta Baseline & Intent Record | 3/3 | Complete    | 2026-04-12 |
 | 2. History-Aware Upstream Integration | 3/3 | Complete | 2026-04-12 |
-| 3. Quartus Verification & Sign-Off | 2/2 | Complete   | 2026-04-18 |
+| 3. Quartus Verification & Sign-Off | 2/2 | Complete    | 2026-04-18 |
 | 4. Maintainer Documentation & Handoff | 0/2 | Not started | - |
