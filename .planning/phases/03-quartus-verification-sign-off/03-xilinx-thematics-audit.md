@@ -1,6 +1,7 @@
 # Phase 03 Xilinx-Thematics Audit
 
 **Purpose:** Audit the Phase 2 upstream-import surface against the fork's four documented Xilinx themes. Surface findings only — apply fixes out of scope per D-06.
+**Retroactive supplement (2026-04-20):** Theme T5 (centralized `__svunit_fatal` wrapper) appended below to close the Phase 1 three-category coverage (parser-facing / warning-reduction / fatal-handling, per `01-executive-summary.md` Theme 2) that was not ring-fenced as a separate T-theme in the original plan. No source changes — inventory only. Driven by pending todo `2026-04-12-audit-imported-changes-for-xilinx-thematics`.
 **Scope commit anchor:** Derived merge-base `84b88033590a1469a238be84d8526b25a9f29d10` → HEAD (Phase 2 merge `27232c2`).
 **Out of scope:** Applying fixes, editing SV/Perl/Python source, touching golden files, pytest Python regressions (`test/test_*.py`), host-side helpers with no net diff vs merge-base (`test/utils.py`), or CI/docs/infra files. `svunit_base/uvm-mock/svunit_uvm_test.sv` is referenced as a T3 anchor only (pre-existing file, not a Phase 2 import).
 
@@ -310,6 +311,78 @@ Required must-includes (all present — no class-A regression):
 
 **Theme outcome:** 0 class-A, 0 class-B, 6 class-C findings (total 6).
 
+## Theme T5: Centralized fatal-handling (`__svunit_fatal` wrapper)
+
+**Supplement added 2026-04-20.** Phase 1 `01-executive-summary.md` Theme 2 names "parser-facing, warning-reduction, and fatal-handling" as the three material Xilinx categories. T1–T4 already cover parser-facing and warning-reduction surfaces; T5 ring-fences fatal-handling so the audit matches the Phase 1 coverage statement.
+
+**Anti-pattern avoided:** Direct `$fatal` calls in stable-runtime and helper-library paths where the fork routes fatal handling through the `__svunit_fatal` / `__svunit_fatal_d` wrapper so simulator-specific fatal behavior can be controlled in one place. Scoped to LCU-03 (stable runtime) and LCU-05 (helper libraries) per `01-fork-delta-matrix.md`. LCU-04 (experimental tree) intent is parser-compat only and does NOT include fatal centralization — experimental-tree raw `$fatal` calls are out of wrapper scope.
+
+### Prior-art anchors (POSITIVE grep — wrapper definitions and call sites in scope)
+
+Wrapper definition forms preserved through the merge:
+
+```
+svunit_base/svunit_internal_defines.svh:22  `define __svunit_fatal_d(s) \
+svunit_base/svunit_pkg.sv:28                 function void __svunit_fatal(input string str);
+svunit_base/svunit_pkg.sv:29                 `__svunit_fatal_d(str)
+```
+
+Wrapper call sites preserved through the merge (LCU-03/LCU-05 scope):
+
+```
+svunit_base/svunit_filter.svh:77
+svunit_base/svunit_filter_for_single_pattern.svh:50
+svunit_base/svunit_filter_for_single_pattern.svh:57
+svunit_base/svunit_filter_for_single_pattern.svh:64
+svunit_base/svunit_filter_for_single_pattern.svh:70
+svunit_base/svunit_string_utils.svh:18
+```
+
+### Candidate regressions (DIFF-AGAINST-BASELINE)
+
+Diff commands:
+```
+git diff "$MERGE_BASE"..HEAD -- "${AUDIT_FILES[@]}" | grep '^-' | grep -F '__svunit_fatal' | grep -v '^---'
+git diff "$MERGE_BASE"..HEAD -- "${AUDIT_FILES[@]}" | grep '^+' | grep -F '$fatal'          | grep -v '^+++'
+```
+
+- **Live wrapper-use removals: 0.** The only `__svunit_fatal` removal is the original `` `define __svunit_fatal(s) \ `` macro, which was renamed to `__svunit_fatal_d` and paired with a new `function void __svunit_fatal(input string str)` in `svunit_base/svunit_pkg.sv`. The public wrapper API is preserved.
+- **Raw `$fatal` reintroductions inside LCU-03/LCU-05 wrapper-scoped files: 0.** The two removed `$fatal` lines in `svunit_filter.svh` and `svunit_string_utils.svh` are correctly replaced by `__svunit_fatal(...)` calls and retained as commented-out prior-art markers (`//$fatal(...)`) one line above each wrapper call.
+
+### Experimental-tree raw `$fatal` inventory (OUT OF WRAPPER SCOPE per LCU-04)
+
+Four raw `$fatal(0, ...)` calls arrived from the upstream import into the experimental tree:
+
+```
+src/experimental/sv/svunit/test_registry.svh:20  $fatal(0, "This level of nesting is not yet supported");
+src/experimental/sv/svunit/testsuite.svh:21      $fatal(0, "Internal error");
+src/experimental/sv/svunit/testsuite.svh:40      $fatal(0, "Internal error");
+src/experimental/sv/svunit/testsuite.svh:53      $fatal(0, "Internal error");
+```
+
+Per LCU-04 the experimental-tree intent is parser-compat only (dynamic-array `[$]` + parser-safe local decls). Fatal-handling centralization is an LCU-03/LCU-05 intent. These sites pass both Phase 3 (Quartus/Verilator) and Phase 4 (Vivado xsim two-mode six-target) sign-offs, so they are not behaviorally implicated.
+
+### Findings — Theme T5
+
+| File:Line | Evidence | Class | Rationale |
+|---|---|---|---|
+| svunit_base/svunit_internal_defines.svh:22 | `` `define __svunit_fatal_d(s) `` with `XILINX_SIMULATOR` dual-form | C | Wrapper macro preserved via `_d` rename paired with new function form |
+| svunit_base/svunit_pkg.sv:28 | `function void __svunit_fatal(input string str)` | C | Wrapper function form present in stable runtime |
+| svunit_base/svunit_filter.svh:76-77 | commented-out `//$fatal(...)` preserved above `__svunit_fatal(...)` call | C | Fork replacement pattern preserved; raw `$fatal` removed from live path |
+| svunit_base/svunit_filter_for_single_pattern.svh:50 | `__svunit_fatal(error_msg)` | C | Fork wrapper call preserved |
+| svunit_base/svunit_filter_for_single_pattern.svh:57 | `__svunit_fatal(error_msg)` | C | Fork wrapper call preserved |
+| svunit_base/svunit_filter_for_single_pattern.svh:64 | `__svunit_fatal($sformatf(...))` | C | Fork wrapper call preserved |
+| svunit_base/svunit_filter_for_single_pattern.svh:70 | `__svunit_fatal("Expected a single character")` | C | Fork wrapper call preserved |
+| svunit_base/svunit_string_utils.svh:17-18 | commented-out `//$fatal(...)` preserved above `__svunit_fatal(...)` call | C | Fork replacement pattern preserved; raw `$fatal` removed from live path |
+| src/experimental/sv/svunit/test_registry.svh:20 | raw `$fatal(0, "This level of nesting is not yet supported")` | C | Experimental tree — LCU-04 intent is parser-compat only; wrapper is out of LCU-04 scope |
+| src/experimental/sv/svunit/testsuite.svh:21 | raw `$fatal(0, "Internal error")` | C | Same — out of LCU-04 wrapper scope |
+| src/experimental/sv/svunit/testsuite.svh:40 | raw `$fatal(0, "Internal error")` | C | Same — out of LCU-04 wrapper scope |
+| src/experimental/sv/svunit/testsuite.svh:53 | raw `$fatal(0, "Internal error")` | C | Same — out of LCU-04 wrapper scope |
+
+**Theme outcome:** 0 class-A, 0 class-B, 12 class-C findings (total 12).
+
+**Maintainer note:** If a future milestone extends `__svunit_fatal` coverage into the experimental tree, the four class-C sites above become the concrete rewrite list. No action is required under the current Phase 1 intent scoping.
+
 ## LCU-04 Sanity (legacy experimental path)
 
 Command:
@@ -326,9 +399,12 @@ Result: **absent from HEAD** (exits without match). The legacy pre-rename `testc
 - Theme T2 (explicit input signatures): 0 class-A, 0 class-B, 16 class-C findings.
 - Theme T3 (XILINX_SIMULATOR ifdef guards): 0 class-A, 0 class-B, 2 class-C findings.
 - Theme T4 (xsim runtime flags / cleanup): 0 class-A, 0 class-B, 6 class-C findings.
+- Theme T5 (centralized `__svunit_fatal` wrapper) — supplement added 2026-04-20: 0 class-A, 0 class-B, 12 class-C findings.
 
-Total findings: 34. Total class-A: 0. Total class-B: 0.
+Total findings: 46. Total class-A: 0. Total class-B: 0.
 
-These class-A and class-B findings feed `03-sign-off.md` §Gap Matrix row "Intent carry-forwards" as the Plan-1 cross-reference (D-05, D-06). With zero class-A and zero class-B findings across all four themes, Plan 2's gap-matrix row "Intent carry-forwards" records that the Phase 2 upstream-import surface preserves the fork's four Xilinx themes cleanly and contributes no new deferred-fix or needs-maintainer-check items beyond those already carried from Phase 2's `02-decision-ledger.md` (LCU-01, LCU-03, LCU-04, HR-03, HR-04).
+These class-A and class-B findings feed `03-sign-off.md` §Gap Matrix row "Intent carry-forwards" as the Plan-1 cross-reference (D-05, D-06). With zero class-A and zero class-B findings across all five themes, Plan 2's gap-matrix row "Intent carry-forwards" records that the Phase 2 upstream-import surface preserves the fork's Xilinx themes cleanly and contributes no new deferred-fix or needs-maintainer-check items beyond those already carried from Phase 2's `02-decision-ledger.md` (LCU-01, LCU-03, LCU-04, HR-03, HR-04).
+
+The T5 supplement is evidence-only and does not alter the Phase 3 sign-off verdict: the four class-C experimental-tree `$fatal` sites fall outside LCU-04 wrapper scope, and both Phase 3 (Quartus/Verilator) and Phase 4 (Vivado xsim) sign-offs pass with those sites as-is.
 
 Applying fixes for class-A/B findings is out of scope per D-06. Surfaces as follow-up phases or maintainer-review items.

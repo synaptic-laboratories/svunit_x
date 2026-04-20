@@ -34,3 +34,18 @@ The user explicitly wants a report before code changes are applied broadly.
    - changes that appear safe as imported
 4. Report the proposed fix set back to the user for approval.
 5. After approval, apply the approved code changes and any narrow inline comments needed to preserve future review context.
+
+## Outcome (2026-04-20)
+
+Closed. Audit is captured in `.planning/phases/03-quartus-verification-sign-off/03-xilinx-thematics-audit.md`.
+
+**Coverage:**
+- T1 parser-safe queue `[$]`: 0 class-A, 0 class-B, 10 class-C (original 2026-04-18 audit)
+- T2 explicit `input` signatures (`<<SLL-FIX>>`): 0 class-A, 0 class-B, 16 class-C (original audit)
+- T3 `XILINX_SIMULATOR` ifdef guards: 0 class-A, 0 class-B, 2 class-C (original audit)
+- T4 xsim runtime flags / cleanup: 0 class-A, 0 class-B, 6 class-C (original audit)
+- T5 centralized `__svunit_fatal` wrapper: 0 class-A, 0 class-B, 12 class-C (supplement added 2026-04-20 to close Phase 1 three-category coverage — parser-facing, warning-reduction, fatal-handling)
+
+**Totals:** 46 findings, 0 class-A, 0 class-B. No code changes proposed. The four raw `$fatal(0, ...)` sites imported into `src/experimental/sv/svunit/{test_registry,testsuite}.svh` classify as class-C because LCU-04 (experimental-tree intent) is parser-compat only, not fatal-centralization. Both Phase 3 and Phase 4 sign-offs pass with those sites as-is.
+
+**Maintainer note:** Extending `__svunit_fatal` wrapper coverage into the experimental tree would be a separate scope decision; the T5 table lists the concrete four-site rewrite set if that path is taken later.

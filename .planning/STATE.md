@@ -114,6 +114,6 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-20
-Stopped at: Started todo "Audit imported changes for Xilinx thematics" — moved to completed, beginning themes checklist + classified findings report (no code changes until user approval)
+Stopped at: Closed todo "Audit imported changes for Xilinx thematics" — appended T5 (centralized `__svunit_fatal` wrapper) supplement to `.planning/phases/03-quartus-verification-sign-off/03-xilinx-thematics-audit.md`; 0 class-A, 0 class-B across all 5 themes (46 total class-C); no code changes
 Resume file: none
 Human-readable checkpoint: none
