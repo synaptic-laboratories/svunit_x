@@ -4,8 +4,9 @@ Running Unit Tests
 SVUnit unit tests are run using runSVUnit. Usage of runSVUnit is as follows::
 
   Usage:  runSVUnit [-s|--sim <simulator> -l|--log <log> -d|--define <macro> -f|--filelist <file> -U|-uvm -m|-mixedsim <vhdlfile>
-                    -r|--r_arg <option> -c|--c_arg <option> -o|--out <dir> -t|--test <test> --filter <filter>]
-    -s|--sim <simulator>     : simulator is either of questa, modelsim, riviera, ius, xcelium, vcs, dsim or xsim
+                    -r|--r_arg <option> -c|--c_arg <option> -o|--out <dir> -t|--test <test> --filter <filter>
+                    --sim-debug-level <none|low|medium|med|high|all> --sim-runtime-stats --xsim-run-mode <separate|standalone>]
+    -s|--sim <simulator>     : simulator is either of questa, modelsim, riviera, ius, xcelium, vcs, dsim, verilator or xsim
     -l|--log <log>           : simulation log file (default: run.log)
     -d|--define <macro>      : appended to the command line as +define+<macro>
     -f|--filelist <file>     : some verilog file list
@@ -18,6 +19,9 @@ SVUnit unit tests are run using runSVUnit. Usage of runSVUnit is as follows::
     -m|--mixedsim <vhdlfile> : consolidated file list with VHDL files and command line switches
     -w|--wavedrom            : process json files as wavedrom output
        --filter <filter>     : specify which tests to run, as <test_module>.<test_name>
+       --sim-debug-level     : normalized simulator debug level
+       --sim-runtime-stats   : request simulator runtime statistics when supported
+       --xsim-run-mode       : xsim run mode
     -h|--help                : prints this help screen
 
 Choosing a Simulator
@@ -51,6 +55,97 @@ Adding Run Time and/or Compile and/or Elaboration Options
 ---------------------------------------------------------
 
 It is possible to specify compile and run time options using the '-c_arg', '-e_arg' and '-r_arg' switches respectively. All compile, elaboration and run time arguments are passed directly to the simulator command line.
+
+Vivado xsim is the exception for runtime options that disable the run log:
+``-r_arg -nolog`` and ``-r_arg --nolog`` are rejected.  SVUnit scans the xsim
+run log after the process exits because Vivado xsim can report a simulator
+startup failure in ``run.log`` while still returning exit code 0.  The guarded
+patterns include ``ERROR: unexpected exception when evaluating tcl command`` and
+``ERROR: [Simtcl ...] Simulation engine failed to start``.
+
+
+Simulator Debug Levels
+----------------------
+
+SVUnit X adds ``--sim-debug-level`` as a normalized front-end for simulator debug
+options. The accepted levels are ``none``, ``low``, ``medium`` (or ``med``),
+``high``, and ``all``. It can also be set with the ``SVUNIT_SIM_DEBUG_LEVEL``
+environment variable.
+
+Vivado xsim converts the level to ``xelab --debug`` as follows:
+
+* ``none`` -> ``off``
+* ``low`` -> ``line``
+* ``medium``/``med`` -> ``typical``
+* ``high``/``all`` -> ``all``
+
+For backward compatibility, ``runSVUnit -s xsim`` still defaults to
+``xelab --debug all`` when no level is specified. If an explicit xsim debug
+option is passed through ``-e_arg``/``--e_arg``, that explicit elaboration
+argument wins and SVUnit prints a warning.
+
+ModelSim/Questa debug levels are mapped through documented vopt visibility and
+vsim debug options from the installed Questa help:
+
+* ``none`` -> no added debug flags
+* ``low`` -> ``+access+r`` plus ``-lineinfo``
+* ``medium``/``med`` -> ``+access+rw`` plus ``-lineinfo``
+* ``high``/``all`` -> ``+access+rw`` plus ``-lineinfo``, ``-classdebug``, and
+  ``-assertdebug``
+
+Verilator debug levels use its documented runtime-debug surface:
+
+* ``none`` -> no added debug flags
+* ``low`` -> ``--runtime-debug`` plus runtime ``+verilator+debug``
+* ``medium``/``med`` -> ``--runtime-debug`` plus runtime
+  ``+verilator+debug`` and ``+verilator+debugi+1``
+* ``high``/``all`` -> ``--runtime-debug --debug`` plus runtime
+  ``+verilator+debug`` and ``+verilator+debugi+3``
+
+For simulators whose debug mapping is not known yet, SVUnit prints a warning and
+does not add guessed vendor flags.
+
+
+Simulator Runtime Statistics
+----------------------------
+
+SVUnit X adds ``--sim-runtime-stats`` as a normalized request for simulator
+runtime diagnostics. It can also be enabled with the
+``SVUNIT_SIM_RUNTIME_STATS`` environment variable.
+
+The current mappings are:
+
+* Vivado xsim -> ``xsim -stats``
+* ModelSim/Questa ``vsim`` -> ``-printsimstats``
+* qrun -> ``-stats=all``
+* Verilator -> ``--stats``
+
+The xsim mapping reports kernel memory usage and simulation CPU usage in
+``run.log``. ModelSim/Questa ``vsim`` reports memory plus vopt,
+elaboration, simulation, and total timing. qrun reports separate ``vlog``,
+``vopt``, and ``vsim`` phase statistics. Verilator writes compile statistics
+under ``obj_dir/*__stats*.txt`` and the certifier parses the generated model's
+standard simulation report for wall time, CPU time, thread count, and allocated
+memory. Certifier runs retain the pytest workspaces and write supported parsed
+statistics to ``sim-runtime-stats.tsv`` and ``sim-runtime-stats.json``. For
+simulators whose runtime-statistics mapping is not known yet, SVUnit prints a
+warning and does not add guessed vendor flags.
+
+
+Vivado xsim Run Modes
+---------------------
+
+SVUnit X adds ``--xsim-run-mode separate|standalone`` for Vivado xsim. The
+default, ``separate``, uses the traditional ``xelab`` followed by ``xsim --R``
+flow. The ``standalone`` mode uses AMD's ``xelab -standalone -R`` path and can
+avoid the cost of launching a separate xsim frontend for unfiltered full-suite
+runs.
+
+Standalone mode is rejected when SVUnit needs xsim runtime arguments:
+``--filter``, ``--list-tests``, ``--reuse-build``, ``--sim-runtime-stats``, or
+explicit ``-r_arg``/``--r_arg`` values. Those paths stay on the default
+``xsim --R`` flow because ``xelab -standalone -R`` does not accept xsim
+``--testplusarg`` runtime options.
 
 
 Enable UVM Component Unit Testing

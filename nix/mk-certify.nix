@@ -19,8 +19,8 @@
 
 let
   toolGroup = "g_svunit_x";
-  toolVersion = "r_v3_38_1_x0_2_0";
-  qualifiedVersion = "3.38.1-x0.2.0";
+  toolVersion = "r_v3_38_1_x0_3_0";
+  qualifiedVersion = "3.38.1-x0.3.0";
 
   # Runtime deps common to every target.  Target-specific deps are appended
   # in mkCertify based on the adapter type.
@@ -39,6 +39,9 @@ let
       target.verilatorPkg
       target.verilatorCc
       target.verilatorMake
+    ]
+    else if target.adapter == "fhs" then [
+      target.vivadoPkg
     ]
     else [];
 
@@ -71,10 +74,18 @@ let
         export TARGET_EXPECTED_VERILATOR=${lib.escapeShellArg target.expectedVerilator}
         export TARGET_VERILATOR_STORE_PATH=${lib.escapeShellArg target.verilatorPkg}
       '';
+      fhsExports = ''
+        export TARGET_EXPECTED_VIVADO=${lib.escapeShellArg target.expectedVivado}
+        export TARGET_VIVADO_PROFILE=${lib.escapeShellArg target.vivadoProfile}
+        export TARGET_VIVADO_STORE_PATH=${lib.escapeShellArg target.vivadoPkg}
+        export TARGET_VIVADO_IS_STUB=${if target.vivadoIsStub then "1" else "0"}
+        export TARGET_QUALIFIED_ROOT=${lib.escapeShellArg target.qualifiedRoot}
+      '';
     in
     common + (
       if target.adapter == "container" then containerExports
       else if target.adapter == "native" then nativeExports
+      else if target.adapter == "fhs" then fhsExports
       else ""
     );
 in

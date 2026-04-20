@@ -17,7 +17,7 @@
   # shapes:
   #   container — Quartus Pro Podman images (qrun / modelsim inside podman)
   #   native    — Verilator binary on PATH
-  #   fhs       — Vivado xsim via buildFHSEnv wrappers (stub for now)
+  #   fhs       — Vivado xsim via buildFHSEnv wrappers
   #
   # Adding a Quartus version is two lines in nix/registry.nix plus a new
   # flake input.  The adapter shell scripts (scripts/certify.sh,
@@ -29,10 +29,7 @@
       url = "git+ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v23_4_0_79";
     };
     quartus-podman-25-1 = {
-      # TODO: switch to git+ssh://prv.git.i01.synaptic-labs.com/... once the
-      # altera 25.1.1.125 Podman repo is pushed there.  Using git+file:// for
-      # now because the repo at this path is still under development.
-      url = "git+file:///srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v25_1_1_125";
+      url = "git+ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_altera_quartus_pro_podman/r_src_v25_1_1_125";
       inputs.nixpkgs.follows = "quartus-podman-23-4/nixpkgs";
     };
     verilator-certified = {
@@ -40,10 +37,13 @@
       # internally; we do NOT follow its nixpkgs — we only consume binaries.
       url = "git+ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044";
     };
+    xilinx-vivado = {
+      url = "git+ssh://prv.git.i01.synaptic-labs.com/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_xilinx_vivado/r_src_v2025_1";
+    };
     nixpkgs.follows = "quartus-podman-23-4/nixpkgs";
   };
 
-  outputs = { nixpkgs, quartus-podman-23-4, quartus-podman-25-1, verilator-certified, ... }:
+  outputs = { nixpkgs, quartus-podman-23-4, quartus-podman-25-1, verilator-certified, xilinx-vivado, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -52,7 +52,7 @@
       # -----------------------------------------------------------------------
       # Host paths (not in any flake input)
       # -----------------------------------------------------------------------
-      svunitArtefactsRoot = "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_2_0_artefacts";
+      svunitArtefactsRoot = "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_svunit_x/r_v3_38_1_x0_3_0_artefacts";
       certToolsDir = "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_sll_tools_qualified/r_cert_tools";
       licenseRoot = "/srv/share/repo/sll/g_sll_poc/g_2026/ContainerPlayPen/launch";
 
@@ -90,7 +90,7 @@
       # Simulator registry and adapter factories
       # -----------------------------------------------------------------------
       registry = import ./nix/registry.nix {
-        inherit pkgs lib quartus-podman-23-4 quartus-podman-25-1 verilator-certified;
+        inherit pkgs lib quartus-podman-23-4 quartus-podman-25-1 verilator-certified xilinx-vivado;
       };
 
       certifyShellScript = pkgs.writeShellApplication {

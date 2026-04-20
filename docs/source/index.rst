@@ -28,5 +28,6 @@ Contents
     running_unit_tests
     simulator_output
     experimental_features
+    maintainer_handoff
     support_and_more_information
     user_guide_feedback

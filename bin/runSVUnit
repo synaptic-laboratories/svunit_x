@@ -22,8 +22,10 @@ use strict;
 use Getopt::Long;
 use File::Glob;
 use File::Find;
+use File::Spec;
 use IO::File;
 use Cwd 'abs_path';
+use Digest::SHA qw(sha256_hex);
 
 use vars qw/ %opt /;
 
@@ -56,11 +58,18 @@ my @tests;
 my $filter;
 my $enable_experimental;
 my $list_tests;
+my $reuse_build;
+my $xsim_reuse_build;
+my $sim_debug_level;
+my $sim_debug_args = "";
+my $sim_runtime_stats;
+my $xsim_run_mode;
 my $help;
 
 sub usage () {
   print "Usage:  runSVUnit [-s|--sim <simulator> -l|--log <log> -d|--define <macro> -f|--filelist <file> -U|-uvm -m|-mixedsim <vhdlfile>\n";
-  print "                  -r|--r_arg <option> -c|--c_arg <option> -e|--e_arg <option> -o|--out <dir> -t|--test <test> --filter <filter>]\n";
+  print "                  -r|--r_arg <option> -c|--c_arg <option> -e|--e_arg <option> -o|--out <dir> -t|--test <test> --filter <filter>\n";
+  print "                  --sim-debug-level <none|low|medium|med|high|all> --sim-runtime-stats --xsim-run-mode <separate|standalone>]\n";
   print "  -s|--sim <simulator>     : simulator is either of questa, modelsim, riviera, ius, xcelium, vcs, dsim, verilator, xsim\n";
   print "  -l|--log <log>           : simulation log file (default: run.log)\n";
   print "  -d|--define <macro>      : appended to the command line as +define+<macro>\n";
@@ -77,15 +86,25 @@ sub usage () {
   print "     --directory           : only run svunit discovery on selected directories\n";
   print "     --enable-experimental : enable experimental features\n";
   print "     --list-tests          : lists available tests without actually running them\n";
+  print "     --reuse-build         : qrun, modelsim, and xsim only; reuse build artefacts when inputs are unchanged\n";
+  print "     --xsim-reuse-build    : xsim-only alias for --reuse-build\n";
+  print "     --sim-debug-level     : normalized simulator debug level for supported backends\n";
+  print "     --sim-runtime-stats   : request simulator runtime statistics when supported\n";
+  print "     --xsim-run-mode       : xsim run mode; separate uses xsim, standalone uses xelab -standalone -R\n";
   print "  -h|--help                : prints this help screen\n";
   print "\n";
   print "Environment variables (SVUnit X extensions):\n";
   print "  SVUNIT_VERILATOR_JOBS    : parallelism for Verilator C++ compilation (default: nproc)\n";
+  print "  SVUNIT_REUSE_BUILD       : set to 1/true/yes/on to enable --reuse-build\n";
+  print "  SVUNIT_XSIM_REUSE_BUILD  : set to 1/true/yes/on to enable --xsim-reuse-build\n";
+  print "  SVUNIT_SIM_DEBUG_LEVEL   : default value for --sim-debug-level\n";
+  print "  SVUNIT_SIM_RUNTIME_STATS : set to 1/true/yes/on to enable --sim-runtime-stats\n";
+  print "  SVUNIT_XSIM_RUN_MODE     : default value for --xsim-run-mode\n";
   print "\n";
   exit 1;
 }
 
-sub clean () {
+sub cleanGeneratedSvunitFiles () {
   find({
       wanted => sub {
                       if (/^\..*testsuite\.sv$/   or
@@ -96,8 +115,451 @@ sub clean () {
                     }
     }, $outdir);
 
+  unlink "$outdir/.svunit.f";
+}
+
+sub clean () {
+  cleanGeneratedSvunitFiles();
   unlink qw( run.log .svunit.f vsim.wlf ncsc.log irun.key );
   system("rm -rf work INCA_libs");
+}
+
+sub envIsTruthy ($) {
+  my $name = shift;
+  return 0 if !defined $ENV{$name};
+  return $ENV{$name} =~ /^(1|true|yes|on)$/i;
+}
+
+sub normalizeSimDebugLevel ($) {
+  my $level = shift;
+  return undef if !defined $level;
+
+  $level =~ s/^\s+|\s+$//g;
+  $level =~ tr/A-Z/a-z/;
+  $level = "medium" if $level eq "med";
+
+  return $level if grep { $_ eq $level } qw(none low medium high all);
+  return undef;
+}
+
+sub elabArgsContainDebugOption () {
+  return grep { /(?:^|\s)-{1,2}debug(?:\s|=|$)/ } @elabargs;
+}
+
+sub xsimDebugArgsForLevel ($) {
+  my $level = shift;
+  return "--debug off" if $level eq "none";
+  return "--debug line" if $level eq "low";
+  return "--debug typical" if $level eq "medium";
+  return "--debug all";
+}
+
+sub modelSimElabArgsContainDebugOption () {
+  return grep {
+    /(?:^|\s)\+access(?:\+|\s|$)/ ||
+    /(?:^|\s)\+acc(?:=|\s|$)/ ||
+    /(?:^|\s)-{1,2}access(?:=|\s|$)/ ||
+    /(?:^|\s)-{1,2}(?:debug|line(?:debug)?|assertdebug|nodebug|nolinedebug|noassertdebug)(?:\s|=|,|$)/
+  } @elabargs;
+}
+
+sub modelSimSimArgsContainDebugOption () {
+  return grep {
+    /(?:^|\s)-{1,2}(?:lineinfo|classdebug|assertdebug|debugdb|nolineinfo|noassertdebug)(?:\s|=|$)/
+  } @simargs;
+}
+
+sub modelSimVoptDebugArgsForLevel ($) {
+  my $level = shift;
+  return "" if $level eq "none";
+  return "+access+r" if $level eq "low";
+  return "+access+rw";
+}
+
+sub modelSimVsimDebugArgsForLevel ($) {
+  my $level = shift;
+  return () if $level eq "none";
+  return ("-lineinfo") if $level eq "low" || $level eq "medium";
+  return ("-lineinfo", "-classdebug", "-assertdebug");
+}
+
+sub verilatorCompileArgsContainDebugOption () {
+  return grep {
+    /(?:^|\s)-{1,2}(?:debug|debug-check|debugi(?:-\S+)?|runtime-debug)(?:\s|=|$)/
+  } @compileargs;
+}
+
+sub verilatorSimArgsContainDebugOption () {
+  return grep {
+    /(?:^|\s)\+verilator\+debug(?:i\+\d+)?(?:\s|$)/
+  } @simargs;
+}
+
+sub verilatorCompileDebugArgsForLevel ($) {
+  my $level = shift;
+  return () if $level eq "none";
+  return ("--runtime-debug") if $level eq "low" || $level eq "medium";
+  return ("--runtime-debug", "--debug");
+}
+
+sub verilatorRuntimeDebugArgsForLevel ($) {
+  my $level = shift;
+  return () if $level eq "none";
+  return ("+verilator+debug") if $level eq "low";
+  return ("+verilator+debug", "+verilator+debugi+1") if $level eq "medium";
+  return ("+verilator+debug", "+verilator+debugi+3");
+}
+
+sub configureSimulatorDebugArgs ($) {
+  my $user_requested_debug = shift;
+
+  if ($simulator eq "xsim") {
+    if (elabArgsContainDebugOption()) {
+      print "SVUNIT WARNING: xsim debug was specified through -e_arg/--e_arg; SVUnit will not add normalized xsim debug flags\n";
+      return;
+    }
+
+    my $level = defined $sim_debug_level ? $sim_debug_level : "all";
+    $sim_debug_args = xsimDebugArgsForLevel($level);
+    return;
+  }
+
+  if ($simulator eq "modelsim") {
+    return if !defined $sim_debug_level || $sim_debug_level eq "none";
+
+    my $vopt_debug_args = modelSimVoptDebugArgsForLevel($sim_debug_level);
+    if ($vopt_debug_args ne "") {
+      if (modelSimElabArgsContainDebugOption()) {
+        print "SVUNIT WARNING: ModelSim/Questa debug/access was specified through -e_arg/--e_arg; SVUnit will not add normalized vopt debug flags\n";
+      } else {
+        push @elabargs, $vopt_debug_args;
+      }
+    }
+
+    my @vsim_debug_args = modelSimVsimDebugArgsForLevel($sim_debug_level);
+    if (@vsim_debug_args) {
+      if (modelSimSimArgsContainDebugOption()) {
+        print "SVUNIT WARNING: ModelSim/Questa debug was specified through -r_arg/--r_arg; SVUnit will not add normalized vsim debug flags\n";
+      } else {
+        push @simargs, @vsim_debug_args;
+      }
+    }
+
+    return;
+  }
+
+  if ($simulator eq "verilator") {
+    return if !defined $sim_debug_level || $sim_debug_level eq "none";
+
+    my @verilator_compile_debug_args = verilatorCompileDebugArgsForLevel($sim_debug_level);
+    if (@verilator_compile_debug_args) {
+      if (verilatorCompileArgsContainDebugOption()) {
+        print "SVUNIT WARNING: Verilator debug was specified through -c_arg/--c_arg; SVUnit will not add normalized Verilator compile debug flags\n";
+      } else {
+        push @compileargs, @verilator_compile_debug_args;
+      }
+    }
+
+    my @verilator_runtime_debug_args = verilatorRuntimeDebugArgsForLevel($sim_debug_level);
+    if (@verilator_runtime_debug_args) {
+      if (verilatorSimArgsContainDebugOption()) {
+        print "SVUNIT WARNING: Verilator runtime debug was specified through -r_arg/--r_arg; SVUnit will not add normalized Verilator runtime debug flags\n";
+      } else {
+        push @simargs, @verilator_runtime_debug_args;
+      }
+    }
+
+    return;
+  }
+
+  if ($user_requested_debug) {
+    print "SVUNIT WARNING: --sim-debug-level is not mapped for $simulator; no simulator debug flags were added\n";
+  }
+}
+
+sub simArgsContainRuntimeStatsOption () {
+  return grep {
+    /(?:^|\s)-{1,2}stats(?:\s|=|$)/ ||
+    /(?:^|\s)-{1,2}printsimstats(?:\s|=|$)/
+  } @simargs;
+}
+
+sub configureSimulatorRuntimeStatsArgs () {
+  return if !defined $sim_runtime_stats;
+
+  if ($simulator eq "xsim") {
+    if (simArgsContainRuntimeStatsOption()) {
+      print "SVUNIT WARNING: xsim runtime stats was specified through -r_arg/--r_arg; SVUnit will not add normalized xsim runtime stats flags\n";
+      return;
+    }
+
+    push @simargs, "-stats";
+    return;
+  }
+
+  if ($simulator eq "modelsim") {
+    if (simArgsContainRuntimeStatsOption()) {
+      print "SVUNIT WARNING: ModelSim/Questa runtime stats was specified through -r_arg/--r_arg; SVUnit will not add normalized ModelSim/Questa runtime stats flags\n";
+      return;
+    }
+
+    push @simargs, "-printsimstats";
+    return;
+  }
+
+  if ($simulator eq "qrun") {
+    if (simArgsContainRuntimeStatsOption()) {
+      print "SVUNIT WARNING: qrun stats was specified through -r_arg/--r_arg; SVUnit will not add normalized qrun stats flags\n";
+      return;
+    }
+
+    push @simargs, "-stats=all";
+    return;
+  }
+
+  if ($simulator eq "verilator") {
+    if (grep { /(?:^|\s)-{1,2}stats(?:\s|=|$)/ } @compileargs) {
+      print "SVUNIT WARNING: Verilator stats was specified through -c_arg/--c_arg; SVUnit will not add normalized Verilator stats flags\n";
+      return;
+    }
+
+    push @compileargs, "--stats";
+    return;
+  }
+
+  print "SVUNIT WARNING: --sim-runtime-stats is not mapped for $simulator; no simulator runtime stats flags were added\n";
+}
+
+sub normalizeXsimRunMode ($) {
+  my $mode = shift;
+  return "separate" if !defined $mode || $mode eq "";
+
+  $mode =~ s/^\s+|\s+$//g;
+  $mode =~ tr/A-Z/a-z/;
+  return $mode if grep { $_ eq $mode } qw(separate standalone);
+  return undef;
+}
+
+sub validateXsimRunMode () {
+  return if $xsim_run_mode eq "separate";
+
+  if ($simulator ne "xsim") {
+    print "Argument error: --xsim-run-mode standalone is only supported with xsim\n";
+    exit CMDLINE_USAGE_ERROR;
+  }
+
+  if (defined $reuse_build) {
+    print "Argument error: --xsim-run-mode standalone cannot be combined with --reuse-build\n";
+    exit CMDLINE_USAGE_ERROR;
+  }
+  if (defined $filter) {
+    print "Argument error: --xsim-run-mode standalone cannot be combined with --filter because xelab -standalone -R does not accept xsim testplusargs\n";
+    exit CMDLINE_USAGE_ERROR;
+  }
+  if (defined $list_tests) {
+    print "Argument error: --xsim-run-mode standalone cannot be combined with --list-tests because xelab -standalone -R does not accept xsim testplusargs\n";
+    exit CMDLINE_USAGE_ERROR;
+  }
+  if (defined $sim_runtime_stats) {
+    print "Argument error: --xsim-run-mode standalone cannot be combined with --sim-runtime-stats because xelab -standalone -R bypasses xsim -stats\n";
+    exit CMDLINE_USAGE_ERROR;
+  }
+  if (@simargs) {
+    print "Argument error: --xsim-run-mode standalone cannot be combined with -r_arg/--r_arg because xelab -standalone -R does not accept xsim runtime arguments\n";
+    exit CMDLINE_USAGE_ERROR;
+  }
+}
+
+sub simLogPath () {
+  return $logfile if File::Spec->file_name_is_absolute($logfile);
+  return "$outdir/$logfile";
+}
+
+sub xsimLogFalseSuccessError () {
+  my $path = simLogPath();
+  my $fh = IO::File->new($path, "r");
+  return undef if !defined $fh;
+
+  while (my $line = <$fh>) {
+    if ($line =~ /ERROR:\s+unexpected exception when evaluating tcl command/ ||
+        $line =~ /ERROR:\s+\[Simtcl\s+\d+-\d+\]\s+Simulation engine failed to start/) {
+      $fh->close();
+      chomp $line;
+      return $line;
+    }
+  }
+
+  $fh->close();
+  return undef;
+}
+
+sub exitIfXsimLogHasFalseSuccessError () {
+  return if $simulator ne "xsim";
+  my $error = xsimLogFalseSuccessError();
+  return if !defined $error;
+
+  print "SVUNIT: xsim reported '$error' in " . simLogPath() . " despite returning success\n";
+  exit INTERNAL_EXECUTION_ERROR;
+}
+
+sub xsimRuntimeArgsDisableRunLog () {
+  return grep { /(?:^|\s)-{1,2}nolog(?:\s|=|$)/ } @simargs;
+}
+
+sub rejectUnsupportedXsimRuntimeArgs () {
+  return if $simulator ne "xsim";
+
+  if (xsimRuntimeArgsDisableRunLog()) {
+    print "Argument error: xsim -r_arg/--r_arg cannot include -nolog/--nolog because SVUnit scans the xsim run log for Vivado false-success errors\n";
+    exit CMDLINE_USAGE_ERROR;
+  }
+}
+
+sub reuseSignaturePath () {
+  return "$outdir/.svunit_${simulator}_reuse.signature";
+}
+
+sub reuseLogPath () {
+  return "$outdir/.svunit_${simulator}_reuse.log";
+}
+
+sub reuseBuildArtifactExists () {
+  if ($simulator eq "xsim") {
+    return -e "$outdir/xsim.dir/work.testrunner/xsimk" ||
+           -d "$outdir/xsim.dir/work.testrunner" ||
+           -e "$outdir/xsim.dir/testrunner/xsimk" ||
+           -d "$outdir/xsim.dir/testrunner";
+  }
+
+  if ($simulator eq "modelsim") {
+    return -d "$outdir/work";
+  }
+  if ($simulator eq "qrun") {
+    return -d "$outdir/qrun.out/work";
+  }
+
+  return 0;
+}
+
+sub digestFile ($) {
+  my $path = shift;
+  return "missing:$path" if !defined $path || !-e $path;
+
+  my $fh = IO::File->new($path, "r");
+  return "unreadable:$path" if !defined $fh;
+  binmode $fh;
+
+  my $ctx = Digest::SHA->new(256);
+  $ctx->addfile($fh);
+  $fh->close();
+  return "sha256:$path:" . $ctx->hexdigest;
+}
+
+sub digestIncludeDir ($) {
+  my $path = shift;
+  return "include-missing:$path" if !defined $path || !-d $path;
+
+  my @files;
+  find({
+      wanted => sub {
+                      return if -d;
+                      push @files, $File::Find::name if /\.(sv|svh|v|vh)$/;
+                    },
+      no_chdir => 1
+    }, $path);
+
+  my @parts = ("include-dir:$path");
+  foreach my $file (sort @files) {
+    push @parts, digestFile($file);
+  }
+  return sha256_hex(join("\0", @parts));
+}
+
+sub digestFilelistEntry ($) {
+  my $entry = shift;
+  $entry =~ s/^\s+|\s+$//g;
+  return () if $entry eq "";
+
+  if ($entry =~ /^--include\s+(.+)$/) {
+    my $include_dir = $1;
+    return digestIncludeDir($include_dir);
+  }
+  if ($entry =~ /^\+incdir\+(.+)$/) {
+    return map { digestIncludeDir($_) } split(/\+/, $1);
+  }
+  if ($entry =~ /^-f\s+(.+)$/) {
+    return digestFile($1);
+  }
+  if ($entry =~ /^-/) {
+    return "option:$entry";
+  }
+
+  my $path = File::Spec->file_name_is_absolute($entry) ? $entry : "$outdir/$entry";
+  return digestFile($path);
+}
+
+sub computeReuseSignature () {
+  my @parts;
+
+  push @parts, "svunit_reuse_signature_v2";
+  push @parts, "simulator=$simulator";
+  push @parts, "compileargs=" . join("\n", @compileargs);
+  push @parts, "elabargs=" . join("\n", @elabargs);
+  push @parts, "sim_debug_args=$sim_debug_args";
+  push @parts, "defines=" . join("\n", @defines);
+  push @parts, "uvm=" . (defined $uvm ? "1" : "0");
+  push @parts, "vhdlfile=" . (defined $vhdlfile ? $vhdlfile : "");
+  push @parts, "enable_experimental=" . (defined $enable_experimental ? "1" : "0");
+
+  foreach (@filelists) {
+    push @parts, digestFile(abs_path($_));
+  }
+  push @parts, digestFile($vhdlfile) if defined $vhdlfile;
+
+  my $svunit_filelist = "$outdir/.svunit.f";
+  push @parts, digestFile($svunit_filelist);
+
+  my $fh = IO::File->new($svunit_filelist, "r");
+  if (defined $fh) {
+    while (my $line = <$fh>) {
+      chomp $line;
+      push @parts, digestFilelistEntry($line);
+    }
+    $fh->close();
+  }
+
+  return sha256_hex(join("\0", @parts));
+}
+
+sub readReuseSignature () {
+  my $path = reuseSignaturePath();
+  my $fh = IO::File->new($path, "r");
+  return "" if !defined $fh;
+
+  my $signature = <$fh>;
+  $fh->close();
+  return "" if !defined $signature;
+  chomp $signature;
+  return $signature;
+}
+
+sub writeReuseSignature ($) {
+  my $signature = shift;
+  my $path = reuseSignaturePath();
+  my $fh = IO::File->new($path, "w") or die "Could not write $path";
+  print $fh "$signature\n";
+  $fh->close();
+}
+
+sub logReuseEvent ($$) {
+  my $event = shift;
+  my $signature = shift;
+  my $path = reuseLogPath();
+  my $fh = IO::File->new($path, "a");
+  return if !defined $fh;
+
+  print $fh "$event\t$signature\n";
+  $fh->close();
 }
 
 # command line options
@@ -117,10 +579,41 @@ GetOptions("l|log=s" => \$logfile,
            "directory=s" => \@directory,
            "enable-experimental" => \$enable_experimental,
            "list-tests" => \$list_tests,
+           "reuse-build" => \$reuse_build,
+           "xsim-reuse-build" => \$xsim_reuse_build,
+           "sim-debug-level=s" => \$sim_debug_level,
+           "sim-runtime-stats" => \$sim_runtime_stats,
+           "xsim-run-mode=s" => \$xsim_run_mode,
            "h|help" => \$help
            ) or usage();
 
 usage() if $help;
+
+$reuse_build = 1 if envIsTruthy("SVUNIT_REUSE_BUILD");
+$xsim_reuse_build = 1 if envIsTruthy("SVUNIT_XSIM_REUSE_BUILD");
+$sim_runtime_stats = 1 if envIsTruthy("SVUNIT_SIM_RUNTIME_STATS");
+$xsim_run_mode = $ENV{"SVUNIT_XSIM_RUN_MODE"} if !defined $xsim_run_mode && defined $ENV{"SVUNIT_XSIM_RUN_MODE"};
+my $user_requested_sim_debug_level = defined $sim_debug_level;
+if (!defined $sim_debug_level && defined $ENV{"SVUNIT_SIM_DEBUG_LEVEL"} && $ENV{"SVUNIT_SIM_DEBUG_LEVEL"} ne "") {
+  $sim_debug_level = $ENV{"SVUNIT_SIM_DEBUG_LEVEL"};
+  $user_requested_sim_debug_level = 1;
+}
+
+if (defined $sim_debug_level) {
+  my $normalized_sim_debug_level = normalizeSimDebugLevel($sim_debug_level);
+  if (!defined $normalized_sim_debug_level) {
+    print("Argument error: --sim-debug-level must be one of none, low, medium, med, high, or all\n");
+    exit CMDLINE_USAGE_ERROR;
+  }
+  $sim_debug_level = $normalized_sim_debug_level;
+}
+
+my $normalized_xsim_run_mode = normalizeXsimRunMode($xsim_run_mode);
+if (!defined $normalized_xsim_run_mode) {
+  print("Argument error: --xsim-run-mode must be one of separate or standalone\n");
+  exit CMDLINE_USAGE_ERROR;
+}
+$xsim_run_mode = $normalized_xsim_run_mode;
 
 foreach (@directory) {
     if (File::Spec->file_name_is_absolute($_)) {
@@ -138,8 +631,6 @@ if ($simulator eq "verilator" && defined $vhdlfile) {
     print("Argument error: cannot run Verilator with VHDL\n");
     exit CMDLINE_USAGE_ERROR
 }
-
-clean();
 
 my $user_specified_simulator = $simulator;
 
@@ -172,8 +663,36 @@ if (not grep { $_ eq $simulator } qw(xrun irun modelsim riviera vcs dsim qrun ve
   usage()
 }
 
+if (defined $xsim_reuse_build && $simulator ne "xsim") {
+  print("Argument error: --xsim-reuse-build is only supported with xsim\n");
+  exit CMDLINE_USAGE_ERROR
+}
+if (defined $xsim_reuse_build) {
+  $reuse_build = 1;
+}
+
+if (defined $reuse_build && not grep { $_ eq $simulator } qw(qrun modelsim xsim)) {
+  print("Argument error: --reuse-build is only supported with qrun, modelsim, or xsim\n");
+  exit CMDLINE_USAGE_ERROR
+}
+
+validateXsimRunMode();
+rejectUnsupportedXsimRuntimeArgs();
+
+if (defined $reuse_build) {
+  cleanGeneratedSvunitFiles();
+} else {
+  clean();
+}
+
+configureSimulatorDebugArgs($user_requested_sim_debug_level);
+configureSimulatorRuntimeStatsArgs();
+
 # start the command line
 $cmd = "cd $outdir; ";
+my $reuse_compile_cmd = "";
+my $reuse_run_cmd = "";
+my $reuse_compile_label = "compile";
 # add the vdhl switches if necessary
 if ($simulator eq "modelsim" or $simulator eq "riviera") {
   $cmd .= "vlib work && ";
@@ -237,7 +756,14 @@ if ($simulator eq "modelsim" or $simulator eq "riviera") {
     push @simargs, "-c";
   }
   my $vopt_elabargs = @elabargs ? qq!-voptargs="@elabargs"! : "";
-  $cmd .= qq! @compileargs && vsim $vopt_elabargs @simargs -lib work -do "run -all; quit" -l $logfile testrunner!;
+  my $modelsim_compile_cmd = qq!$cmd @compileargs!;
+  my $modelsim_run_cmd = qq!vsim $vopt_elabargs @simargs -lib work -do "run -all; quit" -l $logfile testrunner!;
+  $cmd = qq!$modelsim_compile_cmd && $modelsim_run_cmd!;
+  if ($simulator eq "modelsim") {
+    $reuse_compile_cmd = $modelsim_compile_cmd;
+    $reuse_run_cmd = $modelsim_run_cmd;
+    $reuse_compile_label = "vlib/vlog";
+  }
 } elsif ($simulator eq "verilator") {
   my $verilator_simargs = "";
   $verilator_simargs .= " @simargs";
@@ -249,7 +775,22 @@ if ($simulator eq "modelsim" or $simulator eq "riviera") {
   }
   $cmd .= qq! && obj_dir/Vtestrunner $verilator_simargs 2>&1 | tee $logfile !;
 } elsif ($simulator eq "xsim") {
-  $cmd .= qq! @compileargs && xelab --debug all --relax --override_timeunit --timescale 1ns/1ps testrunner @elabargs && xsim @simargs --R --log $logfile testrunner!;
+  $reuse_compile_cmd = qq!$cmd @compileargs && xelab $sim_debug_args --relax --override_timeunit --timescale 1ns/1ps testrunner @elabargs!;
+  $reuse_run_cmd = qq!xsim @simargs --R --log $logfile testrunner!;
+  $reuse_compile_label = "xvlog/xelab";
+  if ($xsim_run_mode eq "standalone") {
+    my $standalone_run_cmd = qq!bash -c "xelab $sim_debug_args --relax --override_timeunit --timescale 1ns/1ps -standalone -R testrunner @elabargs > $logfile 2>&1; rc=\\\$?; cat $logfile; exit \\\$rc"!;
+    $cmd = qq!$cmd @compileargs && $standalone_run_cmd!;
+  } else {
+    $cmd = qq!$reuse_compile_cmd && $reuse_run_cmd!;
+  }
+} elsif ($simulator eq "qrun") {
+  my $qrun_compile_cmd = qq!$cmd @compileargs @elabargs -optimize -top testrunner!;
+  my $qrun_run_cmd = qq!qrun -l $logfile @elabargs @simargs -simulate -top testrunner!;
+  $reuse_compile_cmd = $qrun_compile_cmd;
+  $reuse_run_cmd = $qrun_run_cmd;
+  $reuse_compile_label = "qrun -optimize";
+  $cmd .= " @compileargs @elabargs @simargs -top testrunner";
 } else {
   $cmd .= " @compileargs @elabargs @simargs -top testrunner";
 }
@@ -257,18 +798,22 @@ if ($simulator eq "modelsim" or $simulator eq "riviera") {
 if (defined $filter && $simulator ne "verilator") {
   if ($simulator eq "xsim") {
     $cmd .= " --testplusarg SVUNIT_FILTER=$filter";
+    $reuse_run_cmd .= " --testplusarg SVUNIT_FILTER=$filter";
   }
   else {
     $cmd .= " +SVUNIT_FILTER=$filter";
+    $reuse_run_cmd .= " +SVUNIT_FILTER=$filter" if $reuse_run_cmd ne "";
   }
 }
 
 if (defined $list_tests && $simulator ne "verilator") {
     if ($simulator eq "xsim") {
         $cmd .= " --testplusarg SVUNIT_LIST_TESTS";
+        $reuse_run_cmd .= " --testplusarg SVUNIT_LIST_TESTS";
     }
     else {
         $cmd .= " +SVUNIT_LIST_TESTS";
+        $reuse_run_cmd .= " +SVUNIT_LIST_TESTS" if $reuse_run_cmd ne "";
     }
 }
 
@@ -303,7 +848,42 @@ if ($simulator eq "xsim") {
     }
 }
 
-print $cmd . "\n";
-if (system("$cmd")) {
-  exit INTERNAL_EXECUTION_ERROR;
+if (defined $reuse_build) {
+  my $signature = computeReuseSignature();
+  my $cached_signature = readReuseSignature();
+  my $cache_hit = $cached_signature eq $signature && reuseBuildArtifactExists();
+
+  if ($cache_hit) {
+    print "SVUNIT: $simulator reuse cache hit; skipping $reuse_compile_label\n";
+    logReuseEvent("hit", $signature);
+
+    my $reuse_cmd = qq!cd $outdir; $reuse_run_cmd!;
+    print $reuse_cmd . "\n";
+    if (system("$reuse_cmd")) {
+      exit INTERNAL_EXECUTION_ERROR;
+    }
+    exitIfXsimLogHasFalseSuccessError();
+  } else {
+    print "SVUNIT: $simulator reuse cache miss; running $reuse_compile_label\n";
+    logReuseEvent("miss", $signature);
+
+    print $reuse_compile_cmd . "\n";
+    if (system("$reuse_compile_cmd")) {
+      exit INTERNAL_EXECUTION_ERROR;
+    }
+    writeReuseSignature($signature);
+
+    my $reuse_cmd = qq!cd $outdir; $reuse_run_cmd!;
+    print $reuse_cmd . "\n";
+    if (system("$reuse_cmd")) {
+      exit INTERNAL_EXECUTION_ERROR;
+    }
+    exitIfXsimLogHasFalseSuccessError();
+  }
+} else {
+  print $cmd . "\n";
+  if (system("$cmd")) {
+    exit INTERNAL_EXECUTION_ERROR;
+  }
+  exitIfXsimLogHasFalseSuccessError();
 }

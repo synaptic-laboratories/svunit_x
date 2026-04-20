@@ -8,7 +8,7 @@
 # Adapter values:
 #   container — run pytest inside a Quartus Pro Podman image
 #   native    — run pytest natively against tools on PATH (Verilator)
-#   fhs       — run pytest natively with tools wrapped in a Nix FHS env (Vivado, stub)
+#   fhs       — run pytest natively with tools wrapped in a Nix FHS env (Vivado)
 #
 # Adding a target: append another attr, then regenerate flake.lock if a new
 # input was introduced.  No other code changes are needed — the flake
@@ -19,6 +19,7 @@
 , quartus-podman-23-4
 , quartus-podman-25-1
 , verilator-certified
+, xilinx-vivado
 }:
 
 let
@@ -102,6 +103,27 @@ let
     verilatorMake = verilator-certified.packages.${pkgs.system}.make;
     qualifiedRoot = "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_verilator/r_v5_044";
   };
+
+  vivadoLib = xilinx-vivado.lib.${pkgs.system};
+  vivadoProfiles = vivadoLib.profiles or {};
+  vivadoQualifiedRoot = "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_xilinx_vivado/r_src_v2025_1";
+
+  vivadoSynthSimFullTarget =
+    assert lib.assertMsg (vivadoLib.isStub == false)
+      "SVUnit Vivado xsim target requires xilinx-vivado.lib.${pkgs.system}.isStub == false";
+    assert lib.assertMsg (builtins.hasAttr "synth-sim-full" vivadoProfiles)
+      "SVUnit Vivado xsim target requires the xilinx-vivado synth-sim-full profile";
+    {
+      adapter = "fhs";
+      tool = "xsim";
+      displayName = "Vivado ${vivadoLib.version} xsim (synth-sim-full buildFHSEnv)";
+      pytestFilter = "xsim";
+      expectedVivado = vivadoLib.version;
+      vivadoProfile = "synth-sim-full";
+      vivadoPkg = xilinx-vivado.packages.${pkgs.system}.synth-sim-full;
+      vivadoIsStub = vivadoLib.isStub;
+      qualifiedRoot = vivadoQualifiedRoot;
+    };
 in
 {
   # Quartus 23.4 — full Pro image, supports qrun and modelsim.
@@ -130,4 +152,6 @@ in
   };
 
   "verilator-5-044" = verilatorTarget;
+
+  "vivado-2025-2-1-synth-sim-full-xsim" = vivadoSynthSimFullTarget;
 }
