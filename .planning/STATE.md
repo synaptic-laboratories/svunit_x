@@ -104,8 +104,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Add xsim reuse/cache mode
-  See: `.planning/todos/pending/2026-04-19-add-xsim-reuse-cache-mode.md`
+(none)
 
 ### Blockers/Concerns
 
@@ -114,6 +113,6 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-04-20
-Stopped at: Closed todo "Audit imported changes for Xilinx thematics" — appended T5 (centralized `__svunit_fatal` wrapper) supplement to `.planning/phases/03-quartus-verification-sign-off/03-xilinx-thematics-audit.md`; 0 class-A, 0 class-B across all 5 themes (46 total class-C); no code changes
+Stopped at: Closed both remaining todos — xilinx-thematics audit (T5 supplement appended, 46 findings, all class-C) and xsim reuse-cache (feature landed, full-suite benchmark 53/6/0/0 documented, remains opt-in outside sign-off). Zero pending todos; milestone v3.38.1 remains at 100%.
 Resume file: none
 Human-readable checkpoint: none
