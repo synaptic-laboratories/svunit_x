@@ -33,10 +33,11 @@ The current sign-off boundary is the complete certify target set registered in
    * - ``vivado-2025-2-1-synth-sim-full-xsim``
      - Vivado 2025.2.1 ``synth-sim-full`` through ``buildFHSEnv`` wrappers, xsim path
 
-The current ``x0.3.0`` two-mode, six-target sign-off session is recorded in
-``.planning/sign-off-v3.38.1-x0.3.0.md`` (session stamp captured there after
-the fresh certify run). Each target runs the existing per-fixture regression
-and the compile-once multi-fixture regression. The prior ``x0.2.0`` session
+The current ``x0.3.0`` two-mode, six-target sign-off session is
+``20260420-150941-0d716652``, recorded in
+``.planning/sign-off-v3.38.1-x0.3.0.md`` and tagged as ``v3.38.1-x0.3.0``.
+Each target runs the existing per-fixture regression and the compile-once
+multi-fixture regression. The prior ``x0.2.0`` session
 ``20260419-155633-5ca6b545`` remains archived at:
 
 * ``.planning/phases/04-xilinx-vivado-xsim-integration/04-sign-off.md``
@@ -51,11 +52,15 @@ pushed qualified SSH repositories:
 * ``xilinx-vivado``:
   ``83072bfe622493a11eb713afd01ba952412ee7f3``
 
-Reproduce the final evidence manifest from the stored artefacts with:
+Reproduce the current ``x0.3.0`` evidence manifest from the stored artefacts
+with:
 
 .. code-block:: shell
 
-   bash .planning/phases/04-xilinx-vivado-xsim-integration/04-reproduce.sh --reuse-session 20260419-155633-5ca6b545
+   bash .planning/recert-v3.38.1-x0.3.0/recert.sh --reuse-session 20260420-150941-0d716652
+
+(The prior ``x0.2.0`` manifest can still be reproduced via
+``bash .planning/phases/04-xilinx-vivado-xsim-integration/04-reproduce.sh --reuse-session 20260419-155633-5ca6b545``.)
 
 Run a fresh current-state sign-off with:
 
