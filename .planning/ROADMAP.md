@@ -17,8 +17,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Fork Delta Baseline & Intent Record** - Confirm the upstream target and classify the fork-specific Xilinx/Vivado delta before merge work starts. (completed 2026-04-12)
 - [x] **Phase 2: History-Aware Upstream Integration** - Catch the fork up to upstream while preserving required local behavior and isolating risky merge outcomes for human review. (completed 2026-04-12)
 - [x] **Phase 3: Quartus Verification & Sign-Off** - Prove the synchronized fork passes this stage's required regression flow in the certified Quartus environment. (completed 2026-04-18)
-- [ ] **Phase 4: Xilinx Vivado xsim Integration** - Promote the Vivado xsim flake from deferred future work to an active sign-off target on par with the Quartus targets. (INSERTED 2026-04-18)
-- [ ] **Phase 5: Maintainer Documentation & Handoff** - Leave maintainers with the sign-off boundary (Quartus + Xilinx xsim), sync method, and deferred-work guidance in repo documentation.
+- [x] **Phase 4: Xilinx Vivado xsim Integration** - Promote the Vivado xsim flake from deferred future work to an active sign-off target on par with the Quartus targets. (completed 2026-04-19)
+- [x] **Phase 5: Maintainer Documentation & Handoff** - Leave maintainers with the sign-off boundary (Quartus + Xilinx xsim), sync method, and deferred-work guidance in repo documentation. (completed 2026-04-19)
 
 ## Phase Details
 
@@ -75,7 +75,9 @@ Plans:
   2. Maintainer can inspect the xsim sign-off output showing the synchronized fork passed the required regression suite under Vivado xsim with clear pass/fail criteria.
   3. Maintainer can see that the `fhs` adapter in `scripts/certify.sh` is implemented (no longer a stub) and handles the `buildFHSEnv`-based Vivado flake invocation path.
   4. Maintainer can run `svunit-certify-all` and observe the Vivado xsim target listed alongside the existing five targets in one consolidated manifest.
-**Plans**: TBD (to be decomposed during `/gsd-plan-phase 4`)
+**Plans**: 1 plan
+Plans:
+- [x] `04-01-PLAN.md` — Wire Vivado `synth-sim-full` xsim as the sixth certify target, implement the `fhs` adapter, and produce a two-mode six-target sign-off manifest with performance telemetry
 
 ### Phase 5: Maintainer Documentation & Handoff
 **Goal**: Maintainer can understand the sync method, final sign-off boundary (Quartus + Xilinx xsim), and any remaining review obligations without reconstructing project history.
@@ -87,6 +89,9 @@ Plans:
   3. Maintainer can follow documentation links to the fork-delta intent record and the history-aware upstream-sync method used in this repo.
   4. Maintainer can locate the human-review trail for complex merge outcomes from repo documentation.
 **Plans**: 2 plans
+Plans:
+- [x] `05-01-PLAN.md` — Add the maintainer handoff page and README entry point for the final sign-off boundary and review trail
+- [x] `05-02-PLAN.md` — Verify documentation coverage and close Phase 5 milestone state
 
 ## Progress
 
@@ -98,5 +103,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 1. Fork Delta Baseline & Intent Record | 3/3 | Complete    | 2026-04-12 |
 | 2. History-Aware Upstream Integration | 3/3 | Complete | 2026-04-12 |
 | 3. Quartus Verification & Sign-Off | 2/2 | Complete    | 2026-04-18 |
-| 4. Xilinx Vivado xsim Integration (INSERTED) | 0/- | Not started | - |
-| 5. Maintainer Documentation & Handoff | 0/2 | Not started | - |
+| 4. Xilinx Vivado xsim Integration (INSERTED) | 1/1 | Complete | 2026-04-19 |
+| 5. Maintainer Documentation & Handoff | 2/2 | Complete | 2026-04-19 |

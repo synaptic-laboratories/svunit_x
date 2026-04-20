@@ -12,6 +12,100 @@ Project-level, cross-phase reusable lessons.
 
 ---
 
+## Phase 4 — Xilinx Vivado xsim Integration Follow-up (2026-04-20)
+
+### L4-01: xsim `-simmode gui` is not evidence of a visible GUI launch
+
+**Lesson:** Vivado xsim's `xsimkernel.log` can show `xsimk -simmode gui -wdb ... -socket ...` even when no user-visible GUI appears. Treat that line as Vivado's internal frontend/kernel mode for WDB/socket-backed simulation, not as proof that SVUnit accidentally launched the interactive GUI. The public xsim help exposes `--gui` as the visible GUI switch, and `runSVUnit` does not pass it.
+
+**Evidence:** Full certifier runs `20260420-0949--host_nixos_25.11_x86_64-linux--nix-2.31.2--kernel-6.12.70` (`--sim-debug-level none`) and `20260420-0959--host_nixos_25.11_x86_64-linux--nix-2.31.2--kernel-6.12.70` (`--sim-debug-level all`) both passed while xsim kernel logs still contained `-simmode gui -wdb ... -socket ...`; maintainer checked the GUI session and saw no visible simulator GUI; `/nix/store/6qh214hvrigcq0mk1as81hmqz52w93am-vivado-2025.2.1/bin/xsim --help` lists `--gui` separately from `--runall`/`--wdb`.
+
+**Generalization:** Do not infer user-facing GUI behavior from internal child-process flags alone. Confirm against the documented frontend option and an actual desktop/session observation before optimizing around a supposed GUI launch.
+
+**Applicability:** future xsim runtime investigations, vendor simulator wrapper audits, any log where an internal mode name collides with a user-facing concept.
+
+### L4-02: Vivado xsim can report startup failure in `run.log` while returning exit code 0
+
+**Lesson:** For xsim, process exit status is not sufficient. Vivado can emit fatal frontend/startup errors in the run log and still return 0, so `runSVUnit` must scan `run.log` after a nominally successful xsim process. The scan should stay narrow to vendor startup false-success patterns, not generic `ERROR:` lines, because normal SVUnit assertion failures also emit `ERROR:` as part of expected test output.
+
+**Evidence:** Manual probes reproduced exit-code-0 failures for `ERROR: unexpected exception when evaluating tcl command`; escalated `runSVUnit` runtime probing reproduced an exit-code-0 `ERROR: [Simtcl 6-50] Simulation engine failed to start: Cannot create simulation database file at: /dev/null.wdb`; `test/test_frmwrk.py` covers both vendor patterns and separately verifies that ordinary SVUnit `ERROR: [time][name]...` lines do not trigger the hardening.
+
+**Generalization:** For EDA tools with Tcl frontends and child simulation kernels, define pass/fail on both process status and known fatal log signatures. Keep the fatal signatures vendor-specific and narrow, then add tests for ordinary domain-level errors that must remain non-fatal to the wrapper.
+
+**Applicability:** xsim run wrapper logic, future simulator adapters with Tcl frontends, qualification scripts that call tools which multiplex child-process failures through logs.
+
+### L4-03: xsim `--wdb` is a routing knob, not a disable knob
+
+**Lesson:** The documented xsim `--wdb` option controls the waveform database path, but does not disable the WDB/socket-backed kernel mode. Passing a custom WDB path changes `xsimk -wdb <path>`, while `-simmode gui` and `-socket <port>` remain. Passing `/dev/null` is actively unsafe: xsim appends `.wdb`, reports a `Simtcl 6-50` simulation-engine startup failure, and still returns exit code 0.
+
+**Evidence:** Escalated Vivado smoke and `runSVUnit` probes outside the sandbox showed baseline, `--wdb custom_probe.wdb`, `--nolog`, and `--tclbatch` all still launching `xsimk` with `-simmode gui` and `-socket`; the `/dev/null` probe logged `ERROR: [Simtcl 6-50] Simulation engine failed to start: Cannot create simulation database file at: /dev/null.wdb`.
+
+**Generalization:** Before treating a vendor option as a performance escape hatch, prove whether it disables the subsystem or merely renames its output. Options that only route artifacts should not be used as workaround controls; bad target paths can create new false-success modes.
+
+**Applicability:** xsim performance work, waveform-output controls, simulator command-line normalization.
+
+### L4-04: xelab debug level is a modest cost; repeated xsim runtime remains the larger cost
+
+**Lesson:** Disabling xelab debug reduces elaboration cost but does not remove the xsim kernel launch shape or dominate total runtime. On the same current code, `--sim-debug-level none` took `241.088s` per-fixture with `xelab` averaging `1567.1ms`; `--sim-debug-level all` took `249.552s` per-fixture with `xelab` averaging `1705.7ms`. `xsim` itself stayed around `2.6s` per invocation in both runs.
+
+**Evidence:** Certifier artifacts `20260420-0949--host_nixos_25.11_x86_64-linux--nix-2.31.2--kernel-6.12.70` and `20260420-0959--host_nixos_25.11_x86_64-linux--nix-2.31.2--kernel-6.12.70`; `vivado-tool-timing/tool-invocations.tsv` in each artifact directory.
+
+**Generalization:** When optimizing simulator qualifications, split tool timing by phase. A visible flag difference on elaboration may be real but still secondary if repeated simulation startup dominates the profile.
+
+**Applicability:** xsim compile-once/reuse work, future certifier timing analysis, deciding whether to spend effort on elaboration flags versus simulation invocation count.
+
+### L4-05: Put simulator timing probes in the certifier before changing SVUnit runtime logs
+
+**Lesson:** When diagnosing one vendor simulator's performance, prefer certifier-local wrapper instrumentation before changing the normal SVUnit CLI output. Wrapper shims ahead of `xvlog`, `xelab`, and `xsim` can capture start/end UTC timestamps, epoch millisecond bounds, cwd, args, exit code, and regression mode without altering user-facing `runSVUnit` behavior or duplicating the simulator command builder. Keep the leading timing TSV columns stable when extending telemetry so existing analysis scripts that read tool, duration, cwd, and profile mode continue to work.
+
+**Evidence:** `scripts/certify.sh` now writes timestamped `tool-invocations.tsv` rows plus `tool-summary.tsv` and `tool-by-cwd.tsv` rollups for Vivado FHS, Quartus container, and native Verilator certifier adapters.
+
+**Generalization:** Diagnostic telemetry belongs at the narrowest layer that answers the question. Start with wrappers around external tool processes; only add application-runtime logging or vendor Tcl annotations after wrapper data proves there is still an unobserved interval.
+
+**Applicability:** xsim performance work, future simulator timing investigations, qualification evidence format changes.
+
+### L4-06: Per-fixture pytest isolation limits build-reuse payoff
+
+**Lesson:** `--xsim-reuse-build` does not materially change the cost model when pytest copies each fixture into a fresh workspace. The cache can only hit inside a workspace, so the per-fixture regression still pays nearly all repeated `xsim` startup cost and most compile/elaboration cost. The instrumented reuse run improved per-fixture wall time from `240.956s` to `232.568s` (-3.48%), while `xsim` still ran 47 times and totaled `121.716s`.
+
+**Evidence:** Baseline run `20260420-1028--host_nixos_25.11_x86_64-linux--nix-2.31.2--kernel-6.12.70` versus reuse run `20260420-1044--host_nixos_25.11_x86_64-linux--nix-2.31.2--kernel-6.12.70` (`--xsim-reuse-build --sim-debug-level none`). Per-fixture tool counts changed from `xvlog=47`, `xelab=47`, `xsim=47` to `xvlog=43`, `xelab=43`, `xsim=47`; compile-once wall time was essentially unchanged (`4.999s` to `4.978s`).
+
+**Generalization:** A build cache must share the same lifetime as the work it is meant to amortize. If the test harness creates isolated directories per scenario, optimizer work inside one directory will only help repeated invocations within that scenario, not the whole suite.
+
+**Applicability:** xsim reuse/cache design, pytest datafiles isolation, deciding whether to optimize runSVUnit caching or restructure regression grouping.
+
+### L4-07: xsim `-stats` separates HDL execution from process overhead
+
+**Lesson:** For short SVUnit tests, xsim wall time is mostly fixed simulator launch/frontend/kernel overhead, not HDL execution. The `xsim -stats` line reported about `0.6s` simulation CPU and roughly `555-567 MB` peak memory for representative filter, APB, and UVM runs, while certifier wrapper timing shows about `2.6s` per xsim process. Runtime stats should be opt-in and normalized as `--sim-runtime-stats`; unmapped simulators should warn rather than receiving guessed vendor flags.
+
+**Evidence:** Focused Vivado 2025.2.1 probes in `/tmp/xsim-stats-probe-filter`, `/tmp/xsim-stats-probe-apb`, and `/tmp/xsim-stats-probe-uvm`; full stats certifiers `/tmp/svunit-vivado-xsim-full-stats-20260420-rerun`, `/tmp/svunit-modelsim-full-stats-20260420`, `/tmp/svunit-qrun-full-stats-20260420`, and `/tmp/svunit-verilator-full-stats-20260420`; ModelSim and qrun parser probes `/tmp/svunit-modelsim-stats-probe-20260420-parsed` and `/tmp/svunit-qrun-stats-probe-20260420-parsed`; `optimise_xsim.md`; `bin/runSVUnit` maps `--sim-runtime-stats` / `SVUNIT_SIM_RUNTIME_STATS=1` to xsim `-stats`, ModelSim/Questa `-printsimstats`, qrun `-stats=all`, and Verilator `--stats`; `scripts/certify.sh` parses xsim, ModelSim, qrun, and Verilator stats into `sim-runtime-stats.tsv` and `sim-runtime-stats.json`.
+
+**Generalization:** A simulator wall-time profile should distinguish process overhead from reported kernel execution. Do not optimize HDL tests or debug flags when runtime stats show the kernel itself is a minority of wall time.
+
+**Applicability:** xsim performance work, simulator profiling flags, cross-simulator diagnostic normalization.
+
+### L4-08: xelab standalone is fast but not a drop-in replacement for xsim plusargs
+
+**Lesson:** `xelab -standalone -R` can remove a large part of the xsim frontend cost for unfiltered runs, but it does not accept xsim-style `--testplusarg`/`-testplusarg`; raw `+SVUNIT_FILTER=...` is treated as a design unit. That makes standalone a promising opt-in mode for full-suite xsim runs, not a universal replacement for the current `xsim --R --testplusarg ...` path.
+
+**Evidence:** APB rerun dropped from `4.018s` for `xelab && xsim -stats --R` to `1.973s` with `xelab -standalone -R`; UVM simple model dropped from `8.931s` to `7.025s`. Filter plusarg probes in `/tmp/xsim-stats-probe-filter/xelab-standalone-filter*.out` failed with unrecognized `--testplusarg` or design-unit lookup errors for `+SVUNIT_FILTER=...`. `bin/runSVUnit` now exposes this as `--xsim-run-mode standalone` with guardrails for filters, list-tests, reuse-build, runtime stats, and explicit runtime args.
+
+**Generalization:** A faster vendor execution mode must be checked against the framework's control channel, not just PASS output. If the framework uses runtime plusargs for selection/listing, standalone execution may need a narrower eligibility rule or a different control-channel design.
+
+**Applicability:** xsim standalone mode design, `--filter`/`--list-tests`, future simulator run-mode normalization.
+
+### L4-09: Questa `+acc` letter sets are version-sensitive; prefer accepted `+access` policy
+
+**Lesson:** Do not assume old ModelSim/Questa `+acc=<letters>` recipes are portable across current Questa versions. Questa 2025.1 accepts `+acc`, `+acc=r`, `+acc=rn`, and `+acc=rnp`, but rejects `+acc=mnprt` as `vopt-14401` because several letters are deprecated and treated as a suppressible error that still breaks `runSVUnit`. For normalized `--sim-debug-level`, use the accepted `+access+r` / `+access+rw` policy instead of guessing a comprehensive `+acc` letter set.
+
+**Evidence:** Failed live certifier `/tmp/svunit-modelsim-debug-high-20260420` showed 45 failures from `vsim -voptargs="+acc=mnprt" ...` with `vopt-14401`. Direct probes against the retained compiled workspace showed `+access+r` and `+access+rw` exit cleanly with zero vopt errors. Corrected live certifier `/tmp/svunit-modelsim-debug-high-20260420-rerun` passed with 51 passed / 3 skipped. The installed Questa 2025.1 help documents `+acc` as performance-impacting and says to use `+access` instead.
+
+**Generalization:** When normalizing vendor debug flags, validate the exact option spelling on the installed toolchain. Help text can expose legacy options, but a suppressible vendor warning may still become a nonzero simulation failure.
+
+**Applicability:** ModelSim/Questa debug-level mapping, future simulator flag normalization, any certifier option that rewrites vopt/vsim access flags.
+
+---
+
 ## Phase 3 — Quartus Verification & Sign-Off (2026-04-18)
 
 ### L3-01: Run-id minute collision risk in `qh_build_run_id` — eliminate at the caller, not the tool

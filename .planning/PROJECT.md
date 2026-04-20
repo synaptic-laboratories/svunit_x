@@ -8,7 +8,7 @@ The work is not a generic feature expansion. It is a careful upstream-sync and c
 
 ## Core Value
 
-Bring upstream SVUnit changes into this fork without regressing the fork's Xilinx/Vivado-specific behavior, using Quartus-based verification as the sign-off gate for this stage.
+Bring upstream SVUnit changes into this fork without regressing the fork's Xilinx/Vivado-specific behavior, using Quartus-based verification plus the promoted Vivado xsim sign-off target as the verification boundary for this stage.
 
 ## Requirements
 
@@ -21,12 +21,14 @@ Bring upstream SVUnit changes into this fork without regressing the fork's Xilin
 - ✓ Phase 1 confirmed upstream `v3.38.1` at commit `8e70653e2cbfe3ebe154a863a46bf482ded4bc19`, derived merge-base `84b88033590a1469a238be84d8526b25a9f29d10`, and recorded the remembered-baseline and marker disagreements explicitly as `human-review` — validated in Phase 1
 - ✓ Phase 1 produced a classified fork-delta matrix, executive summary, and blocking human-review handoff for the local Xilinx/Vivado delta — validated in Phase 1
 - ✓ Synchronized fork passes the required regression flow on this machine through the certified Quartus flake (all 5 certify targets PASS: Quartus 23.4 qrun/modelsim, Quartus 25.1 sim-only qrun/modelsim, Verilator 5.044); sign-off record at `.planning/phases/03-quartus-verification-sign-off/03-sign-off.md` with explicit run-ids, gap matrix, and `## Next Sign-Off Round` guidance — validated in Phase 3
+- ✓ Vivado xsim is promoted to the sixth certify target through `vivado-2025-2-1-synth-sim-full-xsim`; Phase 4 sign-off reran all six targets in per-fixture and compile-once modes and records direct Vivado package smoke, SVUnit `pytest -k xsim`, and per-tool Vivado timing evidence in `.planning/phases/04-xilinx-vivado-xsim-integration/04-sign-off.md` — validated in Phase 4
+- ✓ Maintainer documentation now states the final sign-off boundary, links the fork-delta/upstream-sync review trail, and separates future-work dimensions from the current sign-off at `docs/source/maintainer_handoff.rst` — validated in Phase 5
 
 ### Active
 
-- [ ] Catch this fork up to upstream `svunit/svunit` changes against the user-specified `3.38.1` target while preserving required local behavior
-- [ ] Resolve upstream-vs-fork conflicts intelligently by using git history and change intent, not just textual diffs
-- [ ] Document any conflicts or merge cases that still need human judgment after history-aware reconciliation
+- [x] Catch this fork up to upstream `svunit/svunit` changes against the user-specified `3.38.1` target while preserving required local behavior
+- [x] Resolve upstream-vs-fork conflicts intelligently by using git history and change intent, not just textual diffs
+- [x] Document any conflicts or merge cases that still need human judgment after history-aware reconciliation
 
 ### Out of Scope
 
@@ -47,7 +49,11 @@ The execution environment for this stage is also constrained: the Xilinx flake i
 
 Phase 1 completed that verification step. The upstream target is now pinned to `https://github.com/svunit/svunit.git` tag `v3.38.1`, peeled commit `8e70653e2cbfe3ebe154a863a46bf482ded4bc19`, with derived merge-base `84b88033590a1469a238be84d8526b25a9f29d10`. Phase 1 also preserved two deliberate review boundaries for later work: the remembered `v3.37.0` baseline does not equal the derived merge-base, and the candidate marker only resolves cleanly under one ancestry interpretation. Those disagreements are recorded as `human-review`, not unresolved execution blockers.
 
-Phase 3 closed the sign-off gate. All 5 registered certify targets (Quartus 23.4 qrun/modelsim, Quartus 25.1 sim-only qrun/modelsim, Verilator 5.044) pass the regression suite on this machine. The consolidated sign-off record cites explicit run-ids, enumerates carried-forward residuals (HR-01, HR-02, LCU-01, LCU-03, LCU-04, HR-03, HR-04), and flags forward-looking concerns (flake-pin drift, UVM `svverification` license gate, Xilinx xsim flake XFLK-01). The Phase 3 work surfaced and fixed a Questa 2025.1 SALT licensing migration (`SALT_LICENSE_SERVER` replaces `LM_LICENSE_FILE`) in `scripts/certify.sh` and added a reproducibility script at `.planning/phases/03-quartus-verification-sign-off/03-reproduce.sh`.
+Phase 3 closed the original Quartus sign-off gate. All 5 registered certify targets (Quartus 23.4 qrun/modelsim, Quartus 25.1 sim-only qrun/modelsim, Verilator 5.044) pass the regression suite on this machine. The consolidated sign-off record cites explicit run-ids, enumerates carried-forward residuals (HR-01, HR-02, LCU-01, LCU-03, LCU-04, HR-03, HR-04), and flags forward-looking concerns (flake-pin drift, UVM `svverification` license gate, Xilinx xsim flake XFLK-01). The Phase 3 work surfaced and fixed a Questa 2025.1 SALT licensing migration (`SALT_LICENSE_SERVER` replaces `LM_LICENSE_FILE`) in `scripts/certify.sh` and added a reproducibility script at `.planning/phases/03-quartus-verification-sign-off/03-reproduce.sh`.
+
+Phase 4 closed the promoted Vivado xsim gate. The `fhs` adapter is implemented and the Vivado 2025.2.1 `synth-sim-full` package is wired as `vivado-2025-2-1-synth-sim-full-xsim`. The sign-off session `20260419-155633-5ca6b545` reran all six targets with both the per-fixture regression and compile-once multi-fixture regression. In that run Vivado xsim was slower than the Quartus and Verilator targets on pytest/JUnit timing. Per-tool Vivado timing shows the cost is dominated by repeated `xsim`, `xelab`, and `xvlog` invocations rather than Xilinx flake self-tests. After the sign-off, the Quartus 25.1 and Vivado flake inputs were moved from local `git+file` development inputs to pushed `git+ssh` qualified repositories in `flake.lock`.
+
+Phase 5 closed the maintainer handoff. README now points to `docs/source/maintainer_handoff.rst`, which records the final two-mode, six-target sign-off boundary, review trail, reproduction command for session `20260419-155633-5ca6b545`, and the remaining future-work dimensions that do not block this milestone.
 
 ## Constraints
 
@@ -64,14 +70,17 @@ Phase 3 closed the sign-off gate. All 5 registered certify targets (Quartus 23.4
 | Treat this as a brownfield upstream-sync project | The repo already exists, already works, and already carries local fork-specific behavior | ✓ Good |
 | Make the local Xilinx/Vivado delta an explicit early analysis phase | Conflict resolution will be safer if local change intent is documented before upstream sync begins | ✓ Good |
 | Use Quartus-based regression as the stage sign-off gate | The certified Quartus flake is available now, while the Xilinx flake is still future work | ✓ Good |
-| Preserve local Xilinx/Vivado behavior where still needed, while minimizing unnecessary divergence from upstream | The fork should stay maintainable, but not at the cost of losing its local purpose | — Pending |
+| Preserve local Xilinx/Vivado behavior where still needed, while minimizing unnecessary divergence from upstream | The fork should stay maintainable, but not at the cost of losing its local purpose | ✓ Good |
 | Re-confirm the exact upstream `3.38.1` reference before execution | Phase 1 pinned the upstream tag object, peeled commit, and derived merge-base in repo artifacts | ✓ Good |
 | Keep ancestry disagreement and unresolved Xilinx intent explicit for Phase 2 | Phase 1 found real ambiguity that should guide merge work, not be hidden by simplification | ✓ Good |
 | Phase 3 sign-off requires all 5 registered certify targets PASS (D-01) | The project's verification contract names the current registered target set as the required coverage — fewer targets weakens the contract, more targets re-opens discussion | ✓ Good |
 | Phase 3 uses unique per-target `--output-dir` rather than `svunit-certify-all` shared-root snapshot | Review-pass feedback (Codex+OpenCode) flagged `comm -13 BEFORE AFTER` as racy with concurrent writers; explicit per-target paths eliminate the collision class | ✓ Good |
 | Phase 3 introduced `SALT_LICENSE_SERVER` alongside `LM_LICENSE_FILE` for Questa | Questa 2025.1 migrated to SALT licensing; older 2023.3 still reads LM. Setting both lets one container run cleanly with either Questa version — each ignores the variable it doesn't recognize | ✓ Good |
-| Promote Xilinx Vivado xsim integration from v2 deferred to Phase 4 in current milestone (2026-04-18) | Phase 3 sign-off demonstrated the certify tooling surface (`scripts/certify.sh` adapter dispatch, `nix/registry.nix`, `nix/mk-certify.nix`) is cleanly extensible. Deferring another milestone would mean the Maintainer Documentation phase ships referencing Xilinx as future work, then needs re-opening when Xilinx lands — churning the handoff | — Pending |
-| Insert Xilinx as whole-number Phase 4 (not decimal 3.1) and renumber Maintainer Docs to Phase 5 | Decimal numbering signals "urgent polish of prior phase"; Xilinx bring-up is a substantial new capability and belongs between sign-off and docs as a first-class phase so the docs phase describes the final post-Xilinx state | — Pending |
+| Promote Xilinx Vivado xsim integration from v2 deferred to Phase 4 in current milestone (2026-04-18) | Phase 3 sign-off demonstrated the certify tooling surface (`scripts/certify.sh` adapter dispatch, `nix/registry.nix`, `nix/mk-certify.nix`) is cleanly extensible. Deferring another milestone would mean the Maintainer Documentation phase ships referencing Xilinx as future work, then needs re-opening when Xilinx lands — churning the handoff | ✓ Good |
+| Insert Xilinx as whole-number Phase 4 (not decimal 3.1) and renumber Maintainer Docs to Phase 5 | Decimal numbering signals "urgent polish of prior phase"; Xilinx bring-up is a substantial new capability and belongs between sign-off and docs as a first-class phase so the docs phase describes the final post-Xilinx state | ✓ Good |
+| Treat native Vivado `synth-sim-full` and future Vivado container as distinct targets | The current Xilinx flake exposes a working native `buildFHSEnv` profile but not a container image. Keeping them separate preserves current evidence and leaves a clear future qualification layer | ✓ Good |
+| Use a dedicated maintainer handoff docs page as the milestone entry point | The sign-off matrices and decision ledgers are too detailed for README, but future maintainers need one stable index into them | ✓ Good |
+| Run two SVUnit regression modes per certify target | The per-fixture mode preserves clean sign-off isolation, while the compile-once mode covers the local developer workflow where several `*_unit_test.sv` files are compiled into one generated suite | ✓ Good |
 
 ## Evolution
 
@@ -91,4 +100,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-18 after Phase 3 completion + Xilinx-integration scope amendment (Phase 4 inserted, Maintainer Docs renumbered to Phase 5)*
+*Last updated: 2026-04-19 after the two-mode Phase 4 evidence refresh*

@@ -1,0 +1,73 @@
+{
+  "phase": "04",
+  "phase_name": "Xilinx Vivado xsim Integration",
+  "timestamp": "2026-04-19T12:25:05Z",
+  "areas_completed": [
+    "Vivado target contract"
+  ],
+  "areas_remaining": [
+    "FHS adapter behavior",
+    "xsim regression scope and pass bar",
+    "Evidence, manifest, and residual close-out"
+  ],
+  "decisions": {
+    "Vivado target contract": [
+      {
+        "question": "What naming convention should the Vivado xsim certify target use?",
+        "answer": "Use the same style as the Quartus registry names and the current Vivado flake target-profile vocabulary. The working target should be versioned and profile-aware, with planner discretion to settle the exact literal name after re-reading the current Vivado flake. Current preferred shape: vivado-2025-2-1-synth-sim-full-xsim while only synth-sim-full works; a later sim-only target should be named distinctly rather than silently changing the profile behind the same target name.",
+        "options_presented": [
+          "vivado-2025-2-1-xsim",
+          "xilinx-2025-2-1-xsim",
+          "vivado-xsim",
+          "You decide"
+        ]
+      },
+      {
+        "question": "Which Vivado package profile should Phase 4 consume?",
+        "answer": "Consume synth-sim-full for now because the Vivado flake is still under development in another session and synth-sim-full is the only working profile at this point. Do not assume sim-only is usable until the Vivado flake proves it.",
+        "options_presented": [
+          "vivado-sim / sim-only",
+          "vivado / synth-sim-full",
+          "start with vivado-sim, allow fallback to full",
+          "You decide"
+        ]
+      },
+      {
+        "question": "How should stub-vs-real Vivado be gated?",
+        "answer": "Hard gate on lib.${system}.isStub == false before exposing/running the target. Phase 4 sign-off must fail loudly if the Vivado input regresses to a stub.",
+        "options_presented": [
+          "Hard gate isStub == false",
+          "Allow stub target to evaluate but fail at runtime",
+          "Eval can include target, certify run refuses stub",
+          "You decide"
+        ]
+      },
+      {
+        "question": "How should the Vivado flake input be referenced and pinned?",
+        "answer": "Use a git+ssh input pointing at the qualified Vivado repo and take the current flake. Because another Codex session is actively updating that flake, Phase 4 research/planning/execution must periodically re-check the Vivado flake, especially flake.nix and the latest commit, and pin the SVUnit flake.lock to the current accepted Vivado revision before sign-off.",
+        "options_presented": [
+          "Direct flake input to local qualified Vivado repo path and lock it",
+          "Path reference without lock update until run works",
+          "Defer exact pin choice but require final lock before sign-off",
+          "You decide"
+        ]
+      }
+    ]
+  },
+  "deferred_ideas": [],
+  "canonical_refs": [
+    ".planning/PROJECT.md",
+    ".planning/REQUIREMENTS.md",
+    ".planning/ROADMAP.md",
+    ".planning/phases/03-quartus-verification-sign-off/03-CONTEXT.md",
+    ".planning/phases/03-quartus-verification-sign-off/03-sign-off.md",
+    ".planning/phases/02-history-aware-upstream-integration/02-decision-ledger.md",
+    "flake.nix",
+    "nix/registry.nix",
+    "nix/mk-certify.nix",
+    "scripts/certify.sh",
+    "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_xilinx_vivado/r_src_v2025_1/flake.nix",
+    "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_xilinx_vivado/r_src_v2025_1/nix/fhs-env.nix",
+    "/srv/share/repo/sll/g_sll_infra/g_sll_infra_dev_001/g_ext_tools_qualified/g_xilinx_vivado/r_src_v2025_1/nix/sim-package.nix"
+  ]
+}

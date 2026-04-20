@@ -1,7 +1,7 @@
 # Requirements: SVUnit X Upstream Catch-Up
 
 **Defined:** 2026-04-11
-**Core Value:** Bring upstream SVUnit changes into this fork without regressing the fork's Xilinx/Vivado-specific behavior, using Quartus-based verification as the sign-off gate for this stage.
+**Core Value:** Bring upstream SVUnit changes into this fork without regressing the fork's Xilinx/Vivado-specific behavior, using Quartus-based verification plus the promoted Vivado xsim target as the sign-off boundary for this stage.
 
 ## v1 Requirements
 
@@ -33,13 +33,13 @@ Requirements for the current upstream catch-up stage. Each maps to one roadmap p
 
 ### Xilinx Vivado xsim Integration (promoted from v2 on 2026-04-18)
 
-- [ ] **XFLK-01**: Maintainer can run equivalent sign-off verification through a certified Xilinx Vivado xsim flake as a sixth sign-off target alongside the five Quartus/Verilator targets
-- [ ] **XFLK-02**: The `fhs` adapter in `scripts/certify.sh` is implemented (no longer a stub) and handles the `buildFHSEnv`-based Vivado flake invocation path; pass criteria are defined for xsim and surfaced in the consolidated sign-off manifest
+- [x] **XFLK-01**: Maintainer can run equivalent sign-off verification through a certified Xilinx Vivado xsim flake as a sixth sign-off target alongside the five Quartus/Verilator targets
+- [x] **XFLK-02**: The `fhs` adapter in `scripts/certify.sh` is implemented (no longer a stub) and handles the `buildFHSEnv`-based Vivado flake invocation path; per-fixture and compile-once pass criteria are defined for xsim and surfaced in the consolidated sign-off manifest
 
 ### Documentation
 
-- [ ] **DOCS-01**: Repo documentation states which sign-off environments cover this stage (Quartus targets + Xilinx Vivado xsim) and identifies remaining verification dimensions that are future work
-- [ ] **DOCS-02**: Repo documentation points maintainers to the fork-delta intent record and the chosen upstream-sync method
+- [x] **DOCS-01**: Repo documentation states which sign-off environments cover this stage (Quartus targets + Xilinx Vivado xsim) and identifies remaining verification dimensions that are future work
+- [x] **DOCS-02**: Repo documentation points maintainers to the fork-delta intent record and the chosen upstream-sync method
 
 ## v2 Requirements
 
@@ -78,10 +78,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VERI-01 | Phase 3 | Complete |
 | VERI-02 | Phase 3 | Complete |
 | VERI-03 | Phase 3 | Complete |
-| XFLK-01 | Phase 4 | Pending |
-| XFLK-02 | Phase 4 | Pending |
-| DOCS-01 | Phase 5 | Pending |
-| DOCS-02 | Phase 5 | Pending |
+| XFLK-01 | Phase 4 | Complete |
+| XFLK-02 | Phase 4 | Complete |
+| DOCS-01 | Phase 5 | Complete |
+| DOCS-02 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 16 total (was 14; XFLK-01/XFLK-02 promoted from v2 on 2026-04-18)
@@ -90,4 +90,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-04-11*
-*Last updated: 2026-04-18 after Phase 3 completion + Xilinx-integration scope amendment (Phase 4 inserted, Maintainer Docs renumbered to Phase 5)*
+*Last updated: 2026-04-19 after Phase 5 maintainer documentation handoff*
